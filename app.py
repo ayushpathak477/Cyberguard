@@ -22,6 +22,12 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import socketserver
 from urllib.request import urlopen
 import urllib.error
+import platform
+import urllib.parse as urlparse_mod
+try:
+    import geoip2.database
+except Exception:
+    geoip2 = None
 
 # TensorFlow/Keras imports for password enhancement model
 try:
@@ -31,9 +37,9 @@ try:
     from tensorflow.keras.preprocessing.sequence import pad_sequences
     TENSORFLOW_AVAILABLE = True
     print("✅ TensorFlow loaded successfully")
-except ImportError as e:
-    print(f"⚠️ TensorFlow not available: {e}")
-    print("Install with: pip install tensorflow")
+except Exception as e:
+    print(f"⚠️ TensorFlow not available or failed to load: {e}")
+    print("Tip: You can run CyberGuard without TensorFlow; password enhancement will use a fallback.")
     TENSORFLOW_AVAILABLE = False
 
 
@@ -974,6 +980,144 @@ def firewall_status():
         'blocked_count': web_firewall.blocked_count,
         'allowed_count': web_firewall.allowed_count,
         'recent_threats': web_firewall.threat_log[-10:]  # Last 10 threats
+    })
+
+
+# ===================== Map Trace feature integration =====================
+# Minimal integration of mapTrace functionality with namespaced routes
+class SimpleGeo:
+    @staticmethod
+    def get_public_ip():
+        try:
+            resp = requests.get('https://api.ipify.org', timeout=5)
+            return resp.text
+        except Exception:
+            return '127.0.0.1'
+
+    @staticmethod
+    def ip_location(ip: str):
+        # Try local MaxMind if available
+        try:
+            if 'geoip2' in globals() and geoip2 and os.path.exists('GeoLite2-City.mmdb'):
+                with geoip2.database.Reader('GeoLite2-City.mmdb') as reader:
+                    r = reader.city(ip)
+                    return {
+                        'country': r.country.name or 'Unknown',
+                        'city': r.city.name or 'Unknown',
+                        'latitude': float(r.location.latitude or 0),
+                        'longitude': float(r.location.longitude or 0),
+                        'timezone': str(r.location.time_zone or 'Unknown')
+                    }
+        except Exception:
+            pass
+
+        # Fallback to ip-api.com
+        try:
+            r = requests.get(f'http://ip-api.com/json/{ip}', timeout=5)
+            d = r.json()
+            if d.get('status') == 'success':
+                return {
+                    'country': d.get('country', 'Unknown'),
+                    'city': d.get('city', 'Unknown'),
+                    'latitude': d.get('lat', 0),
+                    'longitude': d.get('lon', 0),
+                    'timezone': d.get('timezone', 'Unknown')
+                }
+        except Exception:
+            pass
+
+        return {
+            'country': 'Unknown', 'city': 'Unknown',
+            'latitude': 0, 'longitude': 0, 'timezone': 'Unknown'
+        }
+
+
+def extract_domain_for_maptrace(u: str) -> str:
+    try:
+        if not u.startswith(('http://', 'https://')):
+            u = 'http://' + u
+        parsed = urlparse_mod.urlparse(u)
+        return parsed.netloc
+    except Exception:
+        return u
+
+
+def resolve_ip_for_maptrace(domain: str):
+    try:
+        return socket.gethostbyname(domain)
+    except Exception:
+        return None
+
+
+def ping_host_for_maptrace(host: str):
+    try:
+        sysname = platform.system().lower()
+        if sysname == 'windows':
+            cmd = ['ping', '-n', '4', host]
+        else:
+            cmd = ['ping', '-c', '4', host]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        out = r.stdout
+
+        # Response times
+        times = []
+        if sysname == 'windows':
+            matches = re.findall(r'time[<=](\d+)ms', out)
+            times = [float(t) for t in matches]
+            loss_m = re.search(r'\((\d+)% loss\)', out)
+        else:
+            matches = re.findall(r'time=(\d+\.?\d*)', out)
+            times = [float(t) for t in matches]
+            loss_m = re.search(r'(\d+)% packet loss', out)
+
+        loss = int(loss_m.group(1)) if loss_m else 0
+        avg = sum(times) / len(times) if times else 0.0
+        return avg, loss
+    except Exception:
+        return 0.0, 100
+
+
+def detect_simple_threats_for_maptrace(ip: str, resp_ms: float, loss_pct: int):
+    threats = []
+    if resp_ms > 1000:
+        threats.append({'type': 'HIGH_LATENCY', 'severity': 2, 'description': f'High response time: {resp_ms:.2f}ms'})
+    if loss_pct > 20:
+        threats.append({'type': 'PACKET_LOSS', 'severity': 3, 'description': f'High packet loss: {loss_pct}%'})
+    if loss_pct > 50 and resp_ms > 2000:
+        threats.append({'type': 'POSSIBLE_DDOS', 'severity': 5, 'description': 'Possible DDoS attack detected'})
+    return threats
+
+
+@app.route('/maptrace')
+def maptrace_page():
+    return render_template('map_trace.html')
+
+
+@app.route('/maptrace/trace', methods=['POST'])
+def maptrace_trace():
+    data = request.get_json(force=True, silent=True) or {}
+    u = data.get('url', '')
+    if not u:
+        return jsonify({'error': 'URL is required'}), 400
+
+    domain = extract_domain_for_maptrace(u)
+    dest_ip = resolve_ip_for_maptrace(domain)
+    if not dest_ip:
+        return jsonify({'error': 'Could not resolve domain'}), 400
+
+    src_ip = SimpleGeo.get_public_ip()
+    src_loc = SimpleGeo.ip_location(src_ip)
+    dst_loc = SimpleGeo.ip_location(dest_ip)
+
+    resp_ms, loss_pct = ping_host_for_maptrace(dest_ip)
+    threats = detect_simple_threats_for_maptrace(dest_ip, resp_ms, loss_pct)
+
+    return jsonify({
+        'source': {'ip': src_ip, 'location': src_loc},
+        'destination': {'ip': dest_ip, 'location': dst_loc, 'domain': domain},
+        'network_stats': {'response_time': resp_ms, 'packet_loss': loss_pct},
+        'threats': threats,
+        'timestamp': datetime.now().isoformat()
     })
 
 

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberGuard Pro - Map Trace</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #0a0a0a; color: #00ff00; }
+        #map { height: 100vh; width: 100%; background: #000; }
+        .panel { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.85); border: 2px solid #00ff00; border-radius: 10px; padding: 16px; min-width: 320px; z-index: 1000; }
+        .panel h2 { margin: 0 0 10px; color: #00ff00; }
+        .panel input { width: 100%; padding: 10px; background: #111; border: 1px solid #00ff00; border-radius: 6px; color: #00ff00; }
+        .panel button { width: 100%; margin-top: 10px; padding: 10px; background: #001100; border: 2px solid #00ff00; color: #00ff00; border-radius: 6px; cursor: pointer; }
+        .panel button:hover { background: #003300; }
+        .stats { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.85); border: 2px solid #ff0000; border-radius: 10px; padding: 16px; min-width: 260px; z-index: 1000; }
+        .threats { position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.85); border: 2px solid #ffff00; border-radius: 10px; padding: 16px; min-width: 320px; max-height: 300px; overflow-y: auto; z-index: 1000; }
+        .threat-item { padding: 8px; border-left: 4px solid; margin-bottom: 8px; }
+        .low { border-left-color: #00ff00; }
+        .medium { border-left-color: #ffff00; }
+        .high { border-left-color: #ff0000; }
+    .back { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.9); border: 2px solid #00ffff; color: #00ffff; padding: 10px 14px; border-radius: 6px; cursor: pointer; z-index: 2001; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <a class="back" href="/">← Back to Dashboard</a>
+    <div class="panel">
+        <h2>Map Trace</h2>
+        <label>Enter Website URL</label>
+        <input id="urlInput" placeholder="e.g., google.com or https://example.com" />
+        <button onclick="traceRoute()">Trace Route</button>
+        <div id="loading" style="display:none; margin-top:8px;">Analyzing network path...</div>
+    </div>
+
+    <div class="stats">
+        <h3 style="margin-top:0;color:#ff0000;">Network Stats</h3>
+        <div id="statsContent">Status: Ready</div>
+    </div>
+
+    <div class="threats">
+        <h3 style="margin-top:0;color:#ffff00;">Threats</h3>
+        <div id="threatsContent"><span style="color:#888;">No threats detected</span></div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map, srcMarker, dstMarker, routeLine;
+
+        function initMap() {
+            map = L.map('map', { center: [20,0], zoom: 2, zoomControl: false, attributionControl: false });
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+        }
+
+        async function traceRoute() {
+            const url = document.getElementById('urlInput').value.trim();
+            if (!url) { alert('Please enter a URL'); return; }
+            document.getElementById('loading').style.display = 'block';
+            try {
+                const res = await fetch('/maptrace/trace', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
+                const data = await res.json();
+                if (!res.ok) { throw new Error(data.error || 'Trace failed'); }
+                updateMap(data); updateStats(data); updateThreats(data.threats);
+            } catch (e) { alert('Error: ' + e.message); }
+            finally { document.getElementById('loading').style.display = 'none'; }
+        }
+
+        function updateMap(data) {
+            if (srcMarker) map.removeLayer(srcMarker);
+            if (dstMarker) map.removeLayer(dstMarker);
+            if (routeLine) map.removeLayer(routeLine);
+
+            const s = data.source, d = data.destination;
+            srcMarker = L.marker([s.location.latitude, s.location.longitude]).addTo(map).bindPopup(`<b>Source</b><br>IP: ${s.ip}<br>${s.location.city}, ${s.location.country}`).openPopup();
+            dstMarker = L.marker([d.location.latitude, d.location.longitude]).addTo(map).bindPopup(`<b>Destination</b><br>Domain: ${d.domain}<br>IP: ${d.ip}<br>${d.location.city}, ${d.location.country}`);
+            routeLine = L.polyline([[s.location.latitude, s.location.longitude], [d.location.latitude, d.location.longitude]], { color: (data.threats && data.threats.length) ? 'red' : 'lime', weight: 3, opacity: 0.8, dashArray: '10, 10' }).addTo(map);
+            const group = new L.featureGroup([srcMarker, dstMarker]);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        function updateStats(data) {
+            const n = data.network_stats;
+            document.getElementById('statsContent').innerHTML = `
+                <div>Response Time: ${n.response_time.toFixed(2)} ms</div>
+                <div>Packet Loss: ${n.packet_loss}%</div>
+                <div>Source Country: ${data.source.location.country}</div>
+                <div>Dest Country: ${data.destination.location.country}</div>
+            `;
+        }
+
+        function updateThreats(threats) {
+            const c = document.getElementById('threatsContent');
+            if (!threats || !threats.length) { c.innerHTML = '<span style="color:#888;">No threats detected</span>'; return; }
+            c.innerHTML = threats.map(t => {
+                const cls = t.severity <= 2 ? 'low' : t.severity <= 3 ? 'medium' : 'high';
+                return `<div class="threat-item ${cls}"><strong>${t.type}</strong><br><small>${t.description}</small><br><small>Severity: ${t.severity}/5</small></div>`;
+            }).join('');
+        }
+
+        window.onload = initMap;
+        document.addEventListener('keypress', e => { if (e.key === 'Enter') traceRoute(); });
+    </script>
+</body>
+</html>

@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Monitor - World Map IP Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #0a0a0a;
+            color: #00ff00;
+            overflow: hidden;
+        }
+
+        #overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            display: none;
+        }
+
+        #map {
+            height: 100vh;
+            width: 100%;
+            background: #000;
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 350px;
+            z-index: 1000;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .control-panel h2 {
+            color: #00ff00;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #00ff00;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            color: #00ff00;
+            font-size: 14px;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: #001100;
+            border: 2px solid #00ff00;
+            border-radius: 5px;
+            color: #00ff00;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #003300;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ff0000;
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 300px;
+            z-index: 1000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+        }
+
+        .stats-panel h3 {
+            color: #ff0000;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 5px;
+            background: rgba(255, 0, 0, 0.1);
+            border-radius: 3px;
+        }
+
+        .threat-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #ffff00;
+            border-radius: 10px;
+            padding: 20px;
+            min-width: 350px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.5);
+        }
+
+        .threat-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid;
+            background: rgba(255, 255, 0, 0.1);
+        }
+
+        .threat-low { border-left-color: #00ff00; }
+        .threat-medium { border-left-color: #ffff00; }
+        .threat-high { border-left-color: #ff0000; }
+
+        .loading {
+            display: none;
+            color: #00ff00;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .toggle-overlay {
+            position: absolute;
+            top: 20px;
+            right: 350px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid #00ffff;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            color: #00ffff;
+            z-index: 1001;
+        }
+    </style>
+</head>
+<body>
+    <div id="overlay"></div>
+
+    <div class="toggle-overlay" onclick="toggleOverlay()">
+        Toggle Overlay Mode
+    </div>
+
+    <div class="control-panel">
+        <h2>Network Monitor</h2>
+        <div class="input-group">
+            <label for="urlInput">Enter Website URL:</label>
+            <input type="text" id="urlInput" placeholder="e.g., google.com or https://example.com">
+        </div>
+        <button class="btn" onclick="traceRoute()">Trace Route</button>
+        <div class="loading" id="loading">Analyzing network path...</div>
+    </div>
+
+    <div class="stats-panel">
+        <h3>Network Statistics</h3>
+        <div id="stats-content">
+            <div class="stat-item">
+                <span>Status:</span>
+                <span>Ready</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="threat-panel">
+        <h3>Threat Detection</h3>
+        <div id="threats-content">
+            <div style="color: #888;">No threats detected</div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        let map;
+        let overlayMode = false;
+        let sourceMarker, destMarker, routeLine;
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map', {
+                center: [20, 0],
+                zoom: 2,
+                zoomControl: false,
+                attributionControl: false
+            });
+
+            // Dark theme map
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19
+            }).addTo(map);
+        }
+
+        function toggleOverlay() {
+            overlayMode = !overlayMode;
+            const overlay = document.getElementById('overlay');
+
+            if (overlayMode) {
+                overlay.style.display = 'block';
+                document.body.style.background = 'transparent';
+            } else {
+                overlay.style.display = 'none';
+                document.body.style.background = '#0a0a0a';
+            }
+        }
+
+        async function traceRoute() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/trace', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    updateMap(data);
+                    updateStats(data);
+                    updateThreats(data.threats);
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Network error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        function updateMap(data) {
+            // Clear previous markers
+            if (sourceMarker) map.removeLayer(sourceMarker);
+            if (destMarker) map.removeLayer(destMarker);
+            if (routeLine) map.removeLayer(routeLine);
+
+            const source = data.source;
+            const dest = data.destination;
+
+            // Add source marker (green)
+            sourceMarker = L.marker([source.location.latitude, source.location.longitude])
+                .addTo(map)
+                .bindPopup(`
+                    <b>Source (Your Location)</b><br>
+                    IP: ${source.ip}<br>
+                    Location: ${source.location.city}, ${source.location.country}<br>
+                    Coordinates: ${source.location.latitude}, ${source.location.longitude}
+                `)
+                .openPopup();
+
+            // Add destination marker (red)
+            destMarker = L.marker([dest.location.latitude, dest.location.longitude])
+                .addTo(map)
+                .bindPopup(`
+                    <b>Destination</b><br>
+                    Domain: ${dest.domain}<br>
+                    IP: ${dest.ip}<br>
+                    Location: ${dest.location.city}, ${dest.location.country}<br>
+                    Coordinates: ${dest.location.latitude}, ${dest.location.longitude}
+                `);
+
+            // Draw route line
+            routeLine = L.polyline([
+                [source.location.latitude, source.location.longitude],
+                [dest.location.latitude, dest.location.longitude]
+            ], {
+                color: data.threats && data.threats.length > 0 ? 'red' : 'lime',
+                weight: 3,
+                opacity: 0.8,
+                dashArray: '10, 10'
+            }).addTo(map);
+
+            // Fit map to show both points
+            const group = new L.featureGroup([sourceMarker, destMarker]);
+            map.fitBounds(group.getBounds().pad(0.1));
+        }
+
+        function updateStats(data) {
+            const statsContent = document.getElementById('stats-content');
+            const stats = data.network_stats;
+
+            statsContent.innerHTML = `
+                <div class="stat-item">
+                    <span>Status:</span>
+                    <span style="color: ${data.threats.length > 0 ? '#ff0000' : '#00ff00'}">
+                        ${data.threats.length > 0 ? 'Threats Detected' : 'Secure'}
+                    </span>
+                </div>
+                <div class="stat-item">
+                    <span>Response Time:</span>
+                    <span>${stats.response_time.toFixed(2)} ms</span>
+                </div>
+                <div class="stat-item">
+                    <span>Packet Loss:</span>
+                    <span>${stats.packet_loss}%</span>
+                </div>
+                <div class="stat-item">
+                    <span>Source Country:</span>
+                    <span>${data.source.location.country}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Dest Country:</span>
+                    <span>${data.destination.location.country}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Distance:</span>
+                    <span>${calculateDistance(data.source.location, data.destination.location).toFixed(0)} km</span>
+                </div>
+            `;
+        }
+
+        function updateThreats(threats) {
+            const threatsContent = document.getElementById('threats-content');
+
+            if (!threats || threats.length === 0) {
+                threatsContent.innerHTML = '<div style="color: #888;">No threats detected</div>';
+                return;
+            }
+
+            let threatsHtml = '';
+            threats.forEach(threat => {
+                const severityClass = threat.severity <= 2 ? 'threat-low' : 
+                                     threat.severity <= 3 ? 'threat-medium' : 'threat-high';
+
+                threatsHtml += `
+                    <div class="threat-item ${severityClass}">
+                        <strong>${threat.type}</strong><br>
+                        <small>${threat.description}</small><br>
+                        <small>Severity: ${threat.severity}/5</small>
+                    </div>
+                `;
+            });
+
+            threatsContent.innerHTML = threatsHtml;
+        }
+
+        function calculateDistance(loc1, loc2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (loc2.latitude - loc1.latitude) * Math.PI / 180;
+            const dLon = (loc2.longitude - loc1.longitude) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(loc1.latitude * Math.PI / 180) * Math.cos(loc2.latitude * Math.PI / 180) *
+                     Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Initialize when page loads
+        window.onload = function() {
+            initMap();
+        };
+
+        // Handle Enter key in input
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                traceRoute();
+            }
+        });
+    </script>
+</body>
+</html>
