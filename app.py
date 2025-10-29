@@ -405,16 +405,6 @@ class ThreatIntelligence:
         domain = parsed.netloc.lower()
         path = parsed.path.lower()
 
-        # Basic domain validation
-        if not domain or '.' not in domain:
-            score += 8
-            reasons.append("Invalid or malformed domain")
-
-        # Suspicious/nonsense domain patterns
-        if len(domain) > 30 and any(c in domain for c in '0123456789') and domain.count('.') >= 2:
-            score += 6
-            reasons.append("Suspicious domain with random characters and numbers")
-
         # Long domain names (often used in phishing)
         if len(domain) > 50:
             score += 2
@@ -425,20 +415,19 @@ class ThreatIntelligence:
             score += 1
             reasons.append("Multiple subdomains detected")
 
-        # Suspicious keywords in domain
-        suspicious_keywords = ['secure', 'verify', 'update', 'suspended', 'limited', 'alert']
-        for keyword in suspicious_keywords:
-            if keyword in domain:
-                score += 2
-                reasons.append(f"Suspicious keyword in domain: {keyword}")
-
-        # Check for nonsense/random patterns
-        import re
-        if re.search(r'[a-z]{3,}\d{3,}', domain):  # letters followed by numbers
-            score += 4
-            reasons.append("Suspicious character pattern detected")
-
-        # IP address instead of domain
+            # Suspicious keywords in domain
+            suspicious_keywords = ['secure', 'verify', 'update', 'suspended', 'limited', 'alert']
+            piracy_keywords = ['torrent', 'pirate', 'crack', 'keygen', 'repacks', 'warez', 'download', 'free-games']
+            
+            for keyword in suspicious_keywords:
+                if keyword in domain:
+                    score += 2
+                    reasons.append(f"Suspicious keyword in domain: {keyword}")
+            
+            for keyword in piracy_keywords:
+                if keyword in domain:
+                    score += 4
+                    reasons.append(f"Piracy-related keyword detected: {keyword}")        # IP address instead of domain
         try:
             socket.inet_aton(domain.split(':')[0])
             score += 5
@@ -447,7 +436,7 @@ class ThreatIntelligence:
             pass
 
         # Suspicious TLDs
-        suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.click', '.download', '.ddcom']
+        suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.click', '.download']
         for tld in suspicious_tlds:
             if domain.endswith(tld):
                 score += 3
