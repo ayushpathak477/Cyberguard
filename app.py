@@ -24,10 +24,16 @@ from urllib.request import urlopen
 import urllib.error
 import platform
 import urllib.parse as urlparse_mod
+import logging
+import random
 try:
     import geoip2.database
 except Exception:
     geoip2 = None
+
+# Setup logging for honeypot
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # TensorFlow/Keras imports for password enhancement model
 try:
@@ -870,7 +876,378 @@ class BreachChecker:
 # Proxy-based firewall removed and replaced with browser extension approach
 
 
+# ===================== HONEYPOT SYSTEM =====================
+class HoneypotManager:
+    def __init__(self):
+        self.init_database()
+        self.honeypot_active = False
+        self.attack_stats = {'total_attacks': 0, 'countries': {}, 'services': {}}
+        
+    def init_database(self):
+        """Initialize honeypot database"""
+        conn = sqlite3.connect('cyberguard.db')
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS honeypot_attacks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT, source_ip TEXT, source_port INTEGER, service TEXT,
+                attack_type TEXT, payload TEXT, credentials TEXT, session_id TEXT,
+                country TEXT, asn TEXT, user_agent TEXT, fingerprint TEXT
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+    
+    def get_ip_location(self, ip):
+        """Get IP location information"""
+        try:
+            response = requests.get(f'http://ip-api.com/json/{ip}', timeout=5)
+            data = response.json()
+            if data.get('status') == 'success':
+                return {
+                    'country': data.get('country', 'Unknown'),
+                    'country_code': data.get('countryCode', 'XX'),
+                    'city': data.get('city', 'Unknown'),
+                    'region': data.get('regionName', 'Unknown'),
+                    'latitude': data.get('lat', 0),
+                    'longitude': data.get('lon', 0),
+                    'isp': data.get('isp', 'Unknown'),
+                    'as': data.get('as', 'Unknown'),
+                    'timezone': data.get('timezone', 'Unknown')
+                }
+        except:
+            pass
+        return {
+            'country': 'Unknown', 'country_code': 'XX', 'city': 'Unknown',
+            'region': 'Unknown', 'latitude': 0, 'longitude': 0,
+            'isp': 'Unknown', 'as': 'Unknown', 'timezone': 'Unknown'
+        }
+    
+    def log_honeypot_attack(self, source_ip, source_port, service, attack_type, payload="", credentials="", user_agent=""):
+        """Log honeypot attack to database"""
+        session_id = hashlib.md5(f"{source_ip}{time.time()}".encode()).hexdigest()[:8]
+        location = self.get_ip_location(source_ip)
+        fingerprint = hashlib.md5(f"{source_ip}{user_agent}{payload}".encode()).hexdigest()[:16]
+        
+        conn = sqlite3.connect('cyberguard.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO honeypot_attacks 
+            (timestamp, source_ip, source_port, service, attack_type, payload, credentials, 
+             session_id, country, asn, user_agent, fingerprint)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (datetime.now().isoformat(), source_ip, source_port, service, attack_type,
+              payload, credentials, session_id, location['country'], location['as'],
+              user_agent, fingerprint))
+        conn.commit()
+        conn.close()
+        
+        # Update attack statistics
+        self.attack_stats['total_attacks'] += 1
+        self.attack_stats['countries'][location['country']] = self.attack_stats['countries'].get(location['country'], 0) + 1
+        self.attack_stats['services'][service] = self.attack_stats['services'].get(service, 0) + 1
+        
+        logger.warning(f"HONEYPOT ATTACK: {source_ip}:{source_port} -> {service} ({attack_type}) from {location['country']}")
+
+
+class AdvancedHoneypotHTTPHandler(BaseHTTPRequestHandler):
+    """HTTP Honeypot Handler"""
+    def log_message(self, format, *args):
+        pass
+    
+    def do_GET(self):
+        client_ip = self.client_address[0]
+        user_agent = self.headers.get('User-Agent', 'Unknown')
+        
+        fake_responses = {
+            '/admin': self.serve_fake_admin,
+            '/login': self.serve_fake_login,
+            '/wp-admin': self.serve_fake_wordpress,
+            '/phpmyadmin': self.serve_fake_phpmyadmin,
+            '/.env': self.serve_fake_env,
+            '/config.php': self.serve_fake_config,
+            '/': self.serve_fake_index
+        }
+        
+        handler = fake_responses.get(self.path, self.serve_fake_404)
+        honeypot_manager.log_honeypot_attack(client_ip, self.client_address[1], "HTTP", "WEB_SCAN", self.path, "", user_agent)
+        handler()
+    
+    def serve_fake_admin(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.send_header('Server', 'Apache/2.4.41 (Ubuntu)')
+        self.end_headers()
+        html = '''<html><head><title>Admin Panel</title></head><body>
+        <h2>System Administration</h2>
+        <form method="POST" action="/admin">
+        <input name="username" placeholder="Username" required><br><br>
+        <input name="password" type="password" placeholder="Password" required><br><br>
+        <button type="submit">Login</button>
+        </form></body></html>'''
+        self.wfile.write(html.encode())
+    
+    def serve_fake_login(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        html = '''<html><body><h1>Login Required</h1>
+        <form method="POST"><input name="user"><input name="pass" type="password">
+        <button>Sign In</button></form></body></html>'''
+        self.wfile.write(html.encode())
+    
+    def serve_fake_wordpress(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        html = '''<html><head><title>WordPress Admin</title></head><body>
+        <h1>WordPress</h1><form method="POST">
+        <input name="log" placeholder="Username"><input name="pwd" type="password" placeholder="Password">
+        <button>Log In</button></form></body></html>'''
+        self.wfile.write(html.encode())
+    
+    def serve_fake_phpmyadmin(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        html = '''<html><head><title>phpMyAdmin</title></head><body>
+        <h1>phpMyAdmin 4.9.5</h1><form method="POST">
+        <input name="pma_username" placeholder="Username">
+        <input name="pma_password" type="password" placeholder="Password">
+        <button>Go</button></form></body></html>'''
+        self.wfile.write(html.encode())
+    
+    def serve_fake_env(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        content = '''APP_NAME=MyApp
+APP_ENV=production
+APP_KEY=base64:fake_key_here
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=myapp
+DB_USERNAME=root
+DB_PASSWORD=secret123'''
+        self.wfile.write(content.encode())
+    
+    def serve_fake_config(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        content = '''<?php
+$config = array(
+    'db_host' => 'localhost',
+    'db_user' => 'admin',
+    'db_pass' => 'password123',
+    'db_name' => 'website'
+);
+?>'''
+        self.wfile.write(content.encode())
+    
+    def serve_fake_index(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        html = '''<html><head><title>Welcome</title></head><body>
+        <h1>Server Running</h1><p>Apache/2.4.41 Server</p>
+        <a href="/admin">Admin Panel</a> | <a href="/login">Login</a>
+        </body></html>'''
+        self.wfile.write(html.encode())
+    
+    def serve_fake_404(self):
+        self.send_response(404)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        html = '''<html><head><title>404 Not Found</title></head><body>
+        <h1>Not Found</h1><p>The requested URL was not found on this server.</p>
+        <hr><address>Apache/2.4.41 (Ubuntu) Server</address>
+        </body></html>'''
+        self.wfile.write(html.encode())
+    
+    def do_POST(self):
+        client_ip = self.client_address[0]
+        user_agent = self.headers.get('User-Agent', 'Unknown')
+        
+        try:
+            length = int(self.headers.get('content-length', 0))
+            post_data = self.rfile.read(length).decode('utf-8') if length > 0 else ""
+            
+            honeypot_manager.log_honeypot_attack(client_ip, self.client_address[1], "HTTP",
+                                        "LOGIN_ATTEMPT", self.path, post_data, user_agent)
+        except:
+            pass
+        
+        self.send_response(401)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        html = '''<html><body><h2>Authentication Failed</h2>
+        <p>Invalid credentials. <a href="javascript:history.back()">Try Again</a></p>
+        </body></html>'''
+        self.wfile.write(html.encode())
+
+
+def enhanced_ssh_honeypot(port=2222):
+    """Enhanced SSH honeypot"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(('0.0.0.0', port))
+        sock.listen(10)
+        logger.info(f"SSH Honeypot listening on port {port}")
+        
+        while honeypot_manager.honeypot_active:
+            try:
+                client, addr = sock.accept()
+                threading.Thread(target=handle_enhanced_ssh_client, args=(client, addr)).start()
+            except:
+                break
+        sock.close()
+    except Exception as e:
+        logger.error(f"SSH honeypot error: {e}")
+
+
+def handle_enhanced_ssh_client(client, addr):
+    """Handle SSH client connections"""
+    try:
+        banners = [
+            b"SSH-2.0-OpenSSH_7.4\r\n",
+            b"SSH-2.0-OpenSSH_8.0\r\n",
+            b"SSH-2.0-OpenSSH_6.6\r\n"
+        ]
+        client.send(random.choice(banners))
+        
+        try:
+            banner = client.recv(1024).decode().strip()
+            honeypot_manager.log_honeypot_attack(addr[0], addr[1], "SSH", "CONNECTION", banner)
+        except:
+            banner = "Unknown"
+        
+        time.sleep(random.uniform(0.5, 2.0))
+        
+        for attempt in range(5):
+            try:
+                time.sleep(random.uniform(0.2, 0.8))
+                client.settimeout(30)
+                auth_data = client.recv(1024)
+                
+                if auth_data:
+                    creds = f"attempt_{attempt + 1}_from_{addr[0]}"
+                    honeypot_manager.log_honeypot_attack(addr[0], addr[1], "SSH", "BRUTE_FORCE", banner, creds)
+                    time.sleep(random.uniform(0.5, 1.5))
+                    failure_msg = b"Permission denied, please try again.\r\n"
+                    client.send(failure_msg)
+                else:
+                    break
+            except socket.timeout:
+                break
+            except:
+                break
+        
+        try:
+            client.send(b"Too many authentication failures\r\n")
+        except:
+            pass
+    except Exception as e:
+        logger.debug(f"SSH client handler error: {e}")
+    finally:
+        try:
+            client.close()
+        except:
+            pass
+
+
+def telnet_honeypot(port=2323):
+    """Telnet honeypot"""
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(('0.0.0.0', port))
+        sock.listen(5)
+        logger.info(f"Telnet Honeypot listening on port {port}")
+        
+        while honeypot_manager.honeypot_active:
+            try:
+                client, addr = sock.accept()
+                threading.Thread(target=handle_telnet_client, args=(client, addr)).start()
+            except:
+                break
+        sock.close()
+    except Exception as e:
+        logger.error(f"Telnet honeypot error: {e}")
+
+
+def handle_telnet_client(client, addr):
+    """Handle telnet connections"""
+    try:
+        honeypot_manager.log_honeypot_attack(addr[0], addr[1], "TELNET", "CONNECTION")
+        
+        client.send(b"Welcome to Ubuntu 18.04.5 LTS (GNU/Linux 4.15.0-112-generic x86_64)\r\n")
+        client.send(b"\r\nlogin: ")
+        
+        for attempt in range(3):
+            try:
+                client.settimeout(30)
+                username = client.recv(1024).decode().strip()
+                if username:
+                    client.send(b"Password: ")
+                    password = client.recv(1024).decode().strip()
+                    
+                    creds = f"{username}:{password}"
+                    honeypot_manager.log_honeypot_attack(addr[0], addr[1], "TELNET", "LOGIN_ATTEMPT", creds, creds)
+                    
+                    client.send(b"Login incorrect\r\n\r\nlogin: ")
+                else:
+                    break
+            except:
+                break
+        
+        client.send(b"Too many authentication failures\r\n")
+    except:
+        pass
+    finally:
+        try:
+            client.close()
+        except:
+            pass
+
+
+def start_enhanced_honeypots():
+    """Start all honeypot services"""
+    if not honeypot_manager.honeypot_active:
+        honeypot_manager.honeypot_active = True
+        
+        # Start SSH honeypot
+        threading.Thread(target=enhanced_ssh_honeypot, daemon=True).start()
+        
+        # Start Telnet honeypot
+        threading.Thread(target=telnet_honeypot, daemon=True).start()
+        
+        # Start HTTP honeypot
+        def run_http_honeypot():
+            try:
+                server = HTTPServer(('0.0.0.0', 8080), AdvancedHoneypotHTTPHandler)
+                logger.info("HTTP Honeypot listening on port 8080")
+                while honeypot_manager.honeypot_active:
+                    server.handle_request()
+            except Exception as e:
+                logger.error(f"HTTP honeypot error: {e}")
+        
+        threading.Thread(target=run_http_honeypot, daemon=True).start()
+        logger.info("All honeypots started")
+
+
+def stop_enhanced_honeypots():
+    """Stop all honeypot services"""
+    honeypot_manager.honeypot_active = False
+    logger.info("All honeypots stopped")
+
+
 # Initialize components
+honeypot_manager = HoneypotManager()
 app = Flask(__name__)
 threat_intel = ThreatIntelligence()
 breach_checker = BreachChecker()
@@ -1170,10 +1547,138 @@ def maptrace_trace():
     })
 
 
+# ===================== HONEYPOT API ENDPOINTS =====================
+@app.route('/api/honeypot/start', methods=['POST'])
+def start_honeypot_api():
+    try:
+        start_enhanced_honeypots()
+        return jsonify({
+            'status': 'success',
+            'message': 'Honeypots started successfully',
+            'services': ['SSH (port 2222)', 'Telnet (port 2323)', 'HTTP (port 8080)']
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/honeypot/stop', methods=['POST'])
+def stop_honeypot_api():
+    try:
+        stop_enhanced_honeypots()
+        return jsonify({'status': 'success', 'message': 'All honeypots stopped successfully'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/honeypot/attacks')
+def get_honeypot_attacks():
+    try:
+        conn = sqlite3.connect('cyberguard.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT * FROM honeypot_attacks 
+            ORDER BY timestamp DESC LIMIT 100
+        ''')
+        
+        attacks = []
+        for row in cursor.fetchall():
+            attacks.append({
+                'id': row[0], 'timestamp': row[1], 'source_ip': row[2], 'source_port': row[3],
+                'service': row[4], 'attack_type': row[5], 'payload': row[6], 'credentials': row[7],
+                'session_id': row[8], 'country': row[9], 'asn': row[10], 'user_agent': row[11],
+                'fingerprint': row[12]
+            })
+        
+        conn.close()
+        return jsonify(attacks)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/honeypot/stats')
+def get_honeypot_stats():
+    try:
+        conn = sqlite3.connect('cyberguard.db')
+        cursor = conn.cursor()
+        
+        # Attack statistics by service
+        cursor.execute('''
+            SELECT service, COUNT(*) as count 
+            FROM honeypot_attacks 
+            GROUP BY service
+        ''')
+        service_stats = dict(cursor.fetchall())
+        
+        # Attack statistics by country
+        cursor.execute('''
+            SELECT country, COUNT(*) as count 
+            FROM honeypot_attacks 
+            GROUP BY country 
+            ORDER BY count DESC LIMIT 10
+        ''')
+        country_stats = dict(cursor.fetchall())
+        
+        # Recent attack trends (last 24 hours)
+        yesterday = (datetime.now() - timedelta(days=1)).isoformat()
+        cursor.execute('''
+            SELECT strftime('%H', timestamp) as hour, COUNT(*) as count
+            FROM honeypot_attacks 
+            WHERE timestamp > ?
+            GROUP BY hour
+            ORDER BY hour
+        ''', (yesterday,))
+        hourly_stats = dict(cursor.fetchall())
+        
+        # Top attacking IPs
+        cursor.execute('''
+            SELECT source_ip, COUNT(*) as count, country
+            FROM honeypot_attacks 
+            GROUP BY source_ip 
+            ORDER BY count DESC LIMIT 10
+        ''')
+        top_attackers = [{'ip': row[0], 'count': row[1], 'country': row[2]}
+                         for row in cursor.fetchall()]
+        
+        # Total unique IPs
+        cursor.execute('''
+            SELECT COUNT(DISTINCT source_ip) FROM honeypot_attacks
+        ''')
+        unique_ips = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        return jsonify({
+            'total_attacks': honeypot_manager.attack_stats['total_attacks'],
+            'service_stats': service_stats,
+            'country_stats': country_stats,
+            'hourly_stats': hourly_stats,
+            'top_attackers': top_attackers,
+            'unique_ips': unique_ips,
+            'active_honeypots': honeypot_manager.honeypot_active
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/honeypot/status')
+def get_honeypot_status():
+    try:
+        return jsonify({
+            'active': honeypot_manager.honeypot_active,
+            'total_attacks': honeypot_manager.attack_stats['total_attacks']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     print("🚀 Starting CyberGuard Pro...")
     print("🔐 Password Analyzer: Ready")
-    print("🌐 Web Firewall: Ready to start")
+    print("🌐 Browser Extension: Ready")
     print("📧 Breach Checker: Ready")
+    print("🍯 Honeypot System: Ready to deploy")
+    print("�️  Map Trace: Ready")
+    print("\n💡 Honeypot ports: SSH (2222), Telnet (2323), HTTP (8080)")
+    print("📍 Dashboard: http://localhost:5000")
 
     app.run(debug=True, host='0.0.0.0', port=5000)

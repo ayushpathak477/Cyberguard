@@ -524,6 +524,17 @@
             100% { left: 100%; }
         }
 
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
         .alert-success {
             background: rgba(0, 255, 65, 0.1);
             border: 1px solid var(--cyber-green);
@@ -559,6 +570,11 @@
                 </button>
             </div>
             <div class="nav-item">
+                <button class="nav-button" onclick="showTab('honeypot')">
+                    <i class="fas fa-bug"></i> Honeypots
+                </button>
+            </div>
+            <div class="nav-item">
                 <button class="nav-button" onclick="showTab('extension')">
                     <i class="fas fa-puzzle-piece"></i> Browser Extension
                 </button>
@@ -566,11 +582,6 @@
             <div class="nav-item">
                 <button class="nav-button" onclick="showTab('breach')">
                     <i class="fas fa-exclamation-triangle"></i> Breach Checker
-                </button>
-            </div>
-            <div class="nav-item">
-                <button class="nav-button" onclick="showTab('monitor')">
-                    <i class="fas fa-chart-line"></i> Security Monitor
                 </button>
             </div>
             <div class="nav-item">
@@ -610,6 +621,97 @@
                         
                         <!-- Enhanced password results will be populated dynamically -->
                         <div id="enhancedResult" style="display: none; margin-top: 20px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Honeypot Tab -->
+        <div id="honeypot" class="tab-content">
+            <div class="cyber-card">
+                <h3><i class="fas fa-bug"></i> Honeypot Control Center</h3>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12 text-center">
+                        <div class="mb-3">
+                            <span id="honeypot-status" class="status-indicator status-danger">
+                                <i class="fas fa-circle"></i> INACTIVE
+                            </span>
+                        </div>
+                        
+                        <button class="cyber-button" id="honeypot-toggle" onclick="toggleHoneypot()" style="background: linear-gradient(135deg, #ff6600, #ff8800);">
+                            <i class="fas fa-play"></i> START HONEYPOTS
+                        </button>
+                        
+                        <div class="mt-3" style="font-size: 14px; color: #888;">
+                            <p><strong>Active Services:</strong> SSH (Port 2222) | Telnet (Port 2323) | HTTP (Port 8080)</p>
+                            <p><i class="fas fa-info-circle"></i> Honeypots simulate vulnerable services to attract and log attackers</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div id="totalAttacks" class="stat-number">0</div>
+                            <div class="stat-label">Total Attacks</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div id="uniqueIPs" class="stat-number">0</div>
+                            <div class="stat-label">Unique IPs</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div id="sshAttacks" class="stat-number">0</div>
+                            <div class="stat-label">SSH Attacks</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div id="httpAttacks" class="stat-number">0</div>
+                            <div class="stat-label">HTTP Attacks</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="cyber-card" style="background: rgba(0, 0, 0, 0.3); max-height: 500px; overflow-y: auto;">
+                            <h4><i class="fas fa-satellite"></i> Live Attack Feed</h4>
+                            <div id="attack-feed">
+                                <div style="color: #888; text-align: center; padding: 40px;">
+                                    <i class="fas fa-shield-alt" style="font-size: 48px; opacity: 0.3;"></i>
+                                    <p>No attacks detected yet. Start honeypots to begin monitoring.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="cyber-card" style="background: rgba(0, 0, 0, 0.3); max-height: 500px; overflow-y: auto;">
+                            <h4><i class="fas fa-chart-bar"></i> Attack Statistics</h4>
+                            <div id="attack-stats">
+                                <div style="color: #888; text-align: center; padding: 40px;">
+                                    <i class="fas fa-chart-pie" style="font-size: 48px; opacity: 0.3;"></i>
+                                    <p>Statistics will appear once attacks are logged</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="cyber-alert alert-info">
+                            <strong><i class="fas fa-lightbulb"></i> Testing Your Honeypots:</strong><br>
+                            • SSH: <code>ssh admin@localhost -p 2222</code> (try passwords like: admin, password123, root)<br>
+                            • Telnet: <code>telnet localhost 2323</code><br>
+                            • HTTP: Visit <code>http://localhost:8080/admin</code> or <code>http://localhost:8080/.env</code><br>
+                            • From External: Replace 'localhost' with your server's IP address
+                        </div>
                     </div>
                 </div>
             </div>
@@ -729,75 +831,6 @@
                     </div>
                 </div>
                 <div id="breachResult" style="display: none;"></div>
-            </div>
-        </div>
-
-        <!-- Security Monitor Tab -->
-        <div id="monitor" class="tab-content">
-            <div class="cyber-card">
-                <h3><i class="fas fa-chart-line"></i> System Security Overview</h3>
-
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: var(--cyber-green);">98%</div>
-                            <div class="stat-label">System Security Score</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: var(--cyber-blue);">24/7</div>
-                            <div class="stat-label">Active Monitoring</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="stat-card">
-                            <div class="stat-number" style="color: var(--cyber-yellow);">0</div>
-                            <div class="stat-label">Active Threats</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <h5>Security Features Status:</h5>
-                        <div class="mt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>Password Analyzer</span>
-                                <span class="status-indicator status-safe">
-                                    <i class="fas fa-check-circle"></i> ACTIVE
-                                </span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>Browser Extension</span>
-                                <span id="extensionStatusMonitor" class="status-indicator status-success">
-                                    <i class="fas fa-circle"></i> READY
-                                </span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>Breach Monitor</span>
-                                <span class="status-indicator status-safe">
-                                    <i class="fas fa-check-circle"></i> ACTIVE
-                                </span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>Threat Intelligence</span>
-                                <span class="status-indicator status-safe">
-                                    <i class="fas fa-check-circle"></i> ACTIVE
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h5>Recent Activity:</h5>
-                        <div id="activityLog" class="mt-3">
-                            <div class="breach-result">
-                                <p><i class="fas fa-info-circle"></i> System initialized successfully</p>
-                                <small class="text-muted">Just now</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1044,6 +1077,236 @@
             });
         }
 
+        // ==================== HONEYPOT FUNCTIONS ====================
+        let honeypotActive = false;
+        let honeypotPollingInterval = null;
+
+        async function toggleHoneypot() {
+            const button = document.getElementById('honeypot-toggle');
+            const status = document.getElementById('honeypot-status');
+            
+            try {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PROCESSING...';
+                
+                const endpoint = honeypotActive ? '/api/honeypot/stop' : '/api/honeypot/start';
+                const response = await fetch(endpoint, { method: 'POST' });
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    honeypotActive = !honeypotActive;
+                    updateHoneypotStatus();
+                    
+                    if (honeypotActive) {
+                        startHoneypotPolling();
+                        showAlert('Honeypots started successfully! Services: SSH (2222), Telnet (2323), HTTP (8080)', 'success');
+                    } else {
+                        stopHoneypotPolling();
+                        showAlert('All honeypots stopped successfully', 'info');
+                    }
+                } else {
+                    showAlert('Error: ' + (data.message || 'Unknown error'), 'danger');
+                }
+            } catch (error) {
+                showAlert('Error: ' + error.message, 'danger');
+            } finally {
+                button.disabled = false;
+                updateHoneypotStatus();
+            }
+        }
+
+        function updateHoneypotStatus() {
+            const statusEl = document.getElementById('honeypot-status');
+            const btnEl = document.getElementById('honeypot-toggle');
+            
+            if (honeypotActive) {
+                statusEl.innerHTML = '<i class="fas fa-circle"></i> ACTIVE';
+                statusEl.className = 'status-indicator status-success';
+                btnEl.innerHTML = '<i class="fas fa-stop"></i> STOP HONEYPOTS';
+                btnEl.style.background = 'linear-gradient(135deg, #ff4757, #ff6b7a)';
+            } else {
+                statusEl.innerHTML = '<i class="fas fa-circle"></i> INACTIVE';
+                statusEl.className = 'status-indicator status-danger';
+                btnEl.innerHTML = '<i class="fas fa-play"></i> START HONEYPOTS';
+                btnEl.style.background = 'linear-gradient(135deg, #ff6600, #ff8800)';
+            }
+        }
+
+        function startHoneypotPolling() {
+            if (honeypotPollingInterval) return;
+            
+            // Poll every 3 seconds
+            honeypotPollingInterval = setInterval(async () => {
+                await loadHoneypotStats();
+                await loadAttackFeed();
+            }, 3000);
+            
+            // Initial load
+            loadHoneypotStats();
+            loadAttackFeed();
+        }
+
+        function stopHoneypotPolling() {
+            if (honeypotPollingInterval) {
+                clearInterval(honeypotPollingInterval);
+                honeypotPollingInterval = null;
+            }
+        }
+
+        async function loadHoneypotStats() {
+            try {
+                const response = await fetch('/api/honeypot/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    updateHoneypotStatsDisplay(stats);
+                }
+            } catch (error) {
+                console.error('Error loading honeypot stats:', error);
+            }
+        }
+
+        function updateHoneypotStatsDisplay(stats) {
+            // Update stat cards
+            document.getElementById('totalAttacks').textContent = stats.total_attacks || 0;
+            document.getElementById('uniqueIPs').textContent = stats.unique_ips || 0;
+            document.getElementById('sshAttacks').textContent = (stats.service_stats && stats.service_stats.SSH) || 0;
+            document.getElementById('httpAttacks').textContent = (stats.service_stats && stats.service_stats.HTTP) || 0;
+            
+            // Update attack statistics panel
+            const statsContainer = document.getElementById('attack-stats');
+            if (stats.total_attacks === 0) {
+                statsContainer.innerHTML = `
+                    <div style="color: #888; text-align: center; padding: 40px;">
+                        <i class="fas fa-chart-pie" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p>No attacks logged yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div style="padding: 10px;">';
+            
+            // Service breakdown
+            if (stats.service_stats && Object.keys(stats.service_stats).length > 0) {
+                html += '<h5 style="color: #00ff41; margin-bottom: 15px;"><i class="fas fa-server"></i> Attacks by Service</h5>';
+                for (const [service, count] of Object.entries(stats.service_stats)) {
+                    const percentage = ((count / stats.total_attacks) * 100).toFixed(1);
+                    html += `
+                        <div style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span><i class="fas fa-shield-alt"></i> ${service}</span>
+                                <span style="color: #ff6600;">${count} (${percentage}%)</span>
+                            </div>
+                            <div style="background: rgba(255, 255, 255, 0.1); height: 8px; border-radius: 4px; overflow: hidden;">
+                                <div style="background: linear-gradient(90deg, #ff6600, #ff8800); height: 100%; width: ${percentage}%; transition: width 0.5s;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Country breakdown
+            if (stats.country_stats && Object.keys(stats.country_stats).length > 0) {
+                html += '<h5 style="color: #00ff41; margin: 20px 0 15px;"><i class="fas fa-globe"></i> Top Attack Origins</h5>';
+                const sortedCountries = Object.entries(stats.country_stats).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                for (const [country, count] of sortedCountries) {
+                    html += `
+                        <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(255, 255, 255, 0.05); margin-bottom: 5px; border-radius: 4px;">
+                            <span>${country}</span>
+                            <span style="color: #ff0066;">${count} attacks</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            html += '</div>';
+            statsContainer.innerHTML = html;
+        }
+
+        async function loadAttackFeed() {
+            try {
+                const response = await fetch('/api/honeypot/attacks');
+                if (response.ok) {
+                    const attacks = await response.json();
+                    updateAttackFeed(attacks);
+                }
+            } catch (error) {
+                console.error('Error loading attack feed:', error);
+            }
+        }
+
+        function updateAttackFeed(attacks) {
+            const feedContainer = document.getElementById('attack-feed');
+            
+            if (!attacks || attacks.length === 0) {
+                feedContainer.innerHTML = `
+                    <div style="color: #888; text-align: center; padding: 40px;">
+                        <i class="fas fa-shield-alt" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p>No attacks detected yet</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div style="padding: 10px;">';
+            
+            // Show latest 20 attacks
+            attacks.slice(0, 20).forEach(attack => {
+                const time = new Date(attack.timestamp).toLocaleTimeString();
+                const date = new Date(attack.timestamp).toLocaleDateString();
+                
+                let icon = 'fa-bug';
+                let color = '#ff6600';
+                if (attack.service === 'SSH') { icon = 'fa-terminal'; color = '#00bfff'; }
+                else if (attack.service === 'HTTP') { icon = 'fa-globe'; color = '#ff0066'; }
+                else if (attack.service === 'TELNET') { icon = 'fa-server'; color = '#ffa502'; }
+                
+                html += `
+                    <div class="breach-result" style="border-left: 4px solid ${color}; margin-bottom: 10px; animation: slideIn 0.3s;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <strong style="color: ${color};"><i class="fas ${icon}"></i> ${attack.service} - ${attack.attack_type}</strong>
+                            <small style="color: #888;">${time}</small>
+                        </div>
+                        <p style="margin: 5px 0; font-size: 13px;">
+                            <i class="fas fa-map-marker-alt"></i> <strong>${attack.source_ip}</strong>:${attack.source_port}
+                            ${attack.country ? `<span style="color: #888;"> (${attack.country})</span>` : ''}
+                        </p>
+                        ${attack.credentials ? `
+                            <p style="margin: 5px 0; font-size: 12px; color: #ffa502; background: rgba(255, 165, 0, 0.1); padding: 5px; border-radius: 3px;">
+                                <i class="fas fa-key"></i> <strong>Credentials:</strong> ${attack.credentials.substring(0, 50)}${attack.credentials.length > 50 ? '...' : ''}
+                            </p>
+                        ` : ''}
+                        ${attack.payload && attack.payload.length > 1 ? `
+                            <p style="margin: 5px 0; font-size: 11px; color: #666;">
+                                <i class="fas fa-code"></i> ${attack.payload.substring(0, 60)}${attack.payload.length > 60 ? '...' : ''}
+                            </p>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            feedContainer.innerHTML = html;
+        }
+
+        // Check honeypot status on page load
+        async function checkHoneypotStatus() {
+            try {
+                const response = await fetch('/api/honeypot/status');
+                if (response.ok) {
+                    const data = await response.json();
+                    honeypotActive = data.active || false;
+                    updateHoneypotStatus();
+                    
+                    if (honeypotActive) {
+                        startHoneypotPolling();
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking honeypot status:', error);
+            }
+        }
+
         // Browser Extension Functions
         function openExtensionFolder() {
             // Show instructions instead of trying to open folder directly
@@ -1065,6 +1328,7 @@
                 const response = await fetch('/extension/stats');
                 if (response.ok) {
                     const stats = await response.json();
+                    console.log('Extension stats received:', stats);
                     
                     // Update extension statistics
                     document.getElementById('extensionChecks').textContent = stats.visit_count || 0;
@@ -1076,7 +1340,7 @@
                     updateTopDomains(stats.top_domains || []);
                     updateCategoryBreakdown(stats.category_breakdown || {});
                 } else {
-                    console.warn('Failed to fetch extension stats');
+                    console.warn('Failed to fetch extension stats:', response.status);
                 }
             } catch (error) {
                 console.error('Error fetching extension stats:', error);
@@ -1102,6 +1366,8 @@
 
         function updateVisitLog(visits) {
             const logElement = document.getElementById('visitLog');
+            console.log('Updating visit log with:', visits);
+            
             if (!logElement || !visits || visits.length === 0) {
                 if (logElement) {
                     logElement.innerHTML = `
@@ -1422,6 +1688,12 @@
         function logActivity(message) {
             activityCount++;
             const activityLog = document.getElementById('activityLog');
+            
+            // If activityLog doesn't exist, just return (it was removed with Security Monitor)
+            if (!activityLog) {
+                return;
+            }
+            
             const timestamp = new Date().toLocaleTimeString();
 
             const activityHTML = `
@@ -1472,13 +1744,10 @@
                 showTab('password');
             } else if (e.ctrlKey && e.key === '2') {
                 e.preventDefault();
-                showTab('firewall');
+                showTab('extension');
             } else if (e.ctrlKey && e.key === '3') {
                 e.preventDefault();
                 showTab('breach');
-            } else if (e.ctrlKey && e.key === '4') {
-                e.preventDefault();
-                showTab('monitor');
             }
         });
 
@@ -1541,6 +1810,9 @@
             // Initialize extension stats
             updateExtensionStats();
             setInterval(updateExtensionStats, 5000); // Update every 5 seconds
+            
+            // Check honeypot status
+            checkHoneypotStatus();
         });
 
         // Handle browser proxy instructions
