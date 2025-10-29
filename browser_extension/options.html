@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>CyberGuard Pro - Settings</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+            font-size: 32px;
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .setting-group {
+            margin: 20px 0;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .setting-description {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .checkbox-container label {
+            margin: 0;
+            font-weight: normal;
+        }
+
+        input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, input[type="url"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .api-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .api-online {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .api-offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        .footer a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ CyberGuard Pro Settings</h1>
+            <div class="subtitle">Configure your browser security preferences</div>
+        </div>
+
+        <div id="status-message" class="status-message" style="display: none;"></div>
+
+        <div class="card">
+            <h2>🔗 Backend Connection</h2>
+            <div class="setting-group">
+                <label class="setting-label">
+                    CyberGuard API Endpoint
+                    <span id="api-status" class="api-status">Checking...</span>
+                </label>
+                <div class="setting-description">
+                    URL of your CyberGuard Pro backend server. Default is http://localhost:5000
+                </div>
+                <input type="url" id="api-endpoint" value="http://localhost:5000" placeholder="http://localhost:5000">
+            </div>
+            <button id="test-connection" class="btn btn-secondary">🧪 Test Connection</button>
+        </div>
+
+        <div class="card">
+            <h2>🛡️ Protection Settings</h2>
+            
+            <div class="setting-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-realtime" checked>
+                    <label for="enable-realtime">Enable Real-time Protection</label>
+                </div>
+                <div class="setting-description">
+                    Automatically check websites as you browse for threats and malicious content.
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-warnings" checked>
+                    <label for="enable-warnings">Show Threat Warnings</label>
+                </div>
+                <div class="setting-description">
+                    Display popup warnings when visiting potentially dangerous websites.
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-phishing" checked>
+                    <label for="enable-phishing">Phishing Protection</label>
+                </div>
+                <div class="setting-description">
+                    Monitor forms and login pages for potential phishing attempts.
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-malware" checked>
+                    <label for="enable-malware">Malware Detection</label>
+                </div>
+                <div class="setting-description">
+                    Scan for suspicious JavaScript and potential malware activity.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>⚙️ Advanced Settings</h2>
+            
+            <div class="setting-group">
+                <label class="setting-label">Check Frequency (seconds)</label>
+                <div class="setting-description">
+                    How often to check URLs for threats. Lower values provide better protection but may impact performance.
+                </div>
+                <input type="text" id="check-frequency" value="30" placeholder="30">
+            </div>
+
+            <div class="setting-group">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-logging">
+                    <label for="enable-logging">Enable Debug Logging</label>
+                </div>
+                <div class="setting-description">
+                    Log detailed information to browser console for troubleshooting.
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <button id="save-settings" class="btn btn-primary">💾 Save Settings</button>
+            <button id="reset-settings" class="btn btn-secondary">🔄 Reset to Defaults</button>
+        </div>
+
+        <div class="footer">
+            <p>CyberGuard Pro Browser Extension v1.0</p>
+            <p>
+                <a href="#" id="dashboard-link">Open Dashboard</a> | 
+                <a href="#" id="help-link">Help & Support</a>
+            </p>
+        </div>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

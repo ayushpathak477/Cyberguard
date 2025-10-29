@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            width: 350px;
+            min-height: 400px;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            color: white;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .header .subtitle {
+            margin: 5px 0 0 0;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .status-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .status-card.threat {
+            border-left-color: #ff3333;
+            background: rgba(255, 51, 51, 0.1);
+        }
+
+        .status-card.warning {
+            border-left-color: #ff9800;
+            background: rgba(255, 152, 0, 0.1);
+        }
+
+        .status-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .status-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-description {
+            font-size: 12px;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        .url-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 11px;
+            word-break: break-all;
+        }
+
+        .threat-details {
+            margin-top: 15px;
+        }
+
+        .detail-row {
+            margin: 8px 0;
+            font-size: 12px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #ccc;
+        }
+
+        .detail-value {
+            color: white;
+        }
+
+        .risk-score {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .risk-low { background: #4CAF50; }
+        .risk-medium { background: #ff9800; }
+        .risk-high { background: #ff3333; }
+
+        .actions {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            padding: 15px 20px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+        }
+
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-size: 12px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ CyberGuard Pro</h1>
+        <div class="subtitle">Website Security Monitor</div>
+    </div>
+
+    <div class="content">
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <div>Checking current website...</div>
+        </div>
+
+        <div id="status-content" style="display: none;">
+            <div id="status-card" class="status-card">
+                <div class="status-icon" id="status-icon">✅</div>
+                <div class="status-title" id="status-title">Site Status</div>
+                <div class="status-description" id="status-description">Loading...</div>
+            </div>
+
+            <div class="url-info" id="url-info">
+                <strong>Current URL:</strong><br>
+                <span id="current-url">Loading...</span>
+            </div>
+
+            <div id="threat-details" class="threat-details" style="display: none;">
+                <div class="detail-row">
+                    <span class="detail-label">Threat Type:</span>
+                    <span class="detail-value" id="threat-type">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Risk Score:</span>
+                    <span class="detail-value">
+                        <span id="risk-score" class="risk-score">-</span>
+                    </span>
+                </div>
+                <div class="detail-row" id="reasons-row" style="display: none;">
+                    <span class="detail-label">Detection Reasons:</span>
+                    <div id="reasons-list" class="detail-value"></div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="refresh-btn" class="btn btn-primary">🔄 Recheck</button>
+                <button id="dashboard-btn" class="btn btn-secondary">📊 Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <a href="#" id="settings-link">Settings</a> | 
+        <a href="#" id="help-link">Help</a>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

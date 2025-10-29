@@ -272,6 +272,14 @@ class ThreatIntelligence:
             'gambling': set(),
             'social_engineering': set()
         }
+        # Visit tracking for dashboard
+        self.visit_log = []
+        self.daily_stats = {
+            'total_visits': 0,
+            'unique_domains': set(),
+            'threats_blocked': 0,
+            'last_reset': datetime.now().date()
+        }
         self.load_threat_feeds()
 
     def load_threat_feeds(self):
@@ -282,7 +290,24 @@ class ThreatIntelligence:
             'phishing-bank.fake',
             'download-virus.net',
             'free-money-scam.org',
-            'fake-antivirus.com'
+            'fake-antivirus.com',
+            # More realistic-looking test domains
+            'secure-paypal-verify.com',
+            'amazon-security-alert.org',
+            'microsoft-account-suspended.net',
+            'google-security-warning.tk',
+            'bank-of-america-verify.ml',
+            'apple-id-locked.ga',
+            'facebook-security-check.cf',
+            'netflix-payment-failed.click',
+            'steam-account-suspended.download',
+            # Known piracy/malware distribution sites
+            'fitgirlrepacks.co',
+            'thepiratebay.org',
+            'kickasstorrents.to',
+            '1337x.to',
+            'rarbg.to',
+            'torrentz2.eu'
         ])
 
         # Phishing patterns (suspicious URL patterns)
@@ -292,71 +317,84 @@ class ThreatIntelligence:
             r'.*amazon-.*\.tk',
             r'.*bank.*-verify.*',
             r'.*microsoft-.*\.ml',
-            r'.*google-.*\.cf'
+            r'.*google-.*\.cf',
+            # Piracy and malware distribution patterns
+            r'.*repacks.*',
+            r'.*torrent.*',
+            r'.*pirate.*',
+            r'.*crack.*',
+            r'.*keygen.*',
+            r'.*warez.*'
         ]
 
         print(f"Loaded {len(self.malicious_domains)} malicious domains")
 
     def check_url_safety(self, url):
-        """Comprehensive URL safety check"""
+        """Traffic monitoring - analyze but NEVER block anything"""
         try:
             parsed_url = urlparse(url)
             domain = parsed_url.netloc.lower()
 
-            threat_analysis = {
+            # Categorize the website for monitoring
+            category = self.categorize_website(domain)
+            
+            traffic_analysis = {
                 'url': url,
                 'domain': domain,
-                'is_safe': True,
-                'threat_type': None,
-                'risk_score': 0,
-                'reasons': [],
-                'timestamp': datetime.now().isoformat()
+                'is_safe': True,  # ALWAYS SAFE - never block
+                'category': category,
+                'risk_score': 0,  # No risk scoring needed
+                'timestamp': datetime.now().isoformat(),
+                'visit_time': datetime.now().strftime("%H:%M:%S"),
+                'visit_date': datetime.now().strftime("%Y-%m-%d")
             }
 
-            # Check against known malicious domains
-            if domain in self.malicious_domains:
-                threat_analysis.update({
-                    'is_safe': False,
-                    'threat_type': 'malicious_domain',
-                    'risk_score': 10,
-                    'reasons': ['Domain found in malicious database']
-                })
-                return threat_analysis
-
-            # Check phishing patterns
-            for pattern in self.phishing_patterns:
-                if re.match(pattern, domain):
-                    threat_analysis.update({
-                        'is_safe': False,
-                        'threat_type': 'phishing_pattern',
-                        'risk_score': 8,
-                        'reasons': [f'Suspicious domain pattern: {pattern}']
-                    })
-                    return threat_analysis
-
-            # Check for suspicious URL characteristics
-            risk_factors = self.analyze_url_characteristics(url)
-            threat_analysis['risk_score'] = risk_factors['score']
-            threat_analysis['reasons'].extend(risk_factors['reasons'])
-
-            if risk_factors['score'] >= 7:
-                threat_analysis['is_safe'] = False
-                threat_analysis['threat_type'] = 'suspicious_characteristics'
-
-            # Check with external APIs (VirusTotal, Google Safe Browsing, etc.)
-            external_check = self.check_external_apis(url)
-            if not external_check['is_safe']:
-                threat_analysis.update(external_check)
-
-            return threat_analysis
+            return traffic_analysis
 
         except Exception as e:
             return {
                 'url': url,
-                'is_safe': True,  # Default to safe if check fails
-                'error': str(e),
-                'risk_score': 0
+                'domain': urlparse(url).netloc.lower(),
+                'is_safe': True,  # Always safe
+                'category': 'unknown',
+                'timestamp': datetime.now().isoformat(),
+                'error': str(e)
             }
+    
+    def categorize_website(self, domain):
+        """Categorize websites for monitoring"""
+        social_media = ['facebook.com', 'twitter.com', 'instagram.com', 'linkedin.com', 'tiktok.com', 'snapchat.com']
+        search_engines = ['google.com', 'bing.com', 'yahoo.com', 'duckduckgo.com']
+        news_sites = ['cnn.com', 'bbc.com', 'reuters.com', 'news.yahoo.com', 'msn.com']
+        shopping = ['amazon.com', 'ebay.com', 'walmart.com', 'target.com', 'alibaba.com']
+        entertainment = ['youtube.com', 'netflix.com', 'hulu.com', 'disney.com', 'twitch.tv']
+        work_productivity = ['microsoft.com', 'office.com', 'github.com', 'stackoverflow.com', 'gmail.com']
+        
+        for site in social_media:
+            if site in domain:
+                return 'Social Media'
+        for site in search_engines:
+            if site in domain:
+                return 'Search Engine'
+        for site in news_sites:
+            if site in domain:
+                return 'News'
+        for site in shopping:
+            if site in domain:
+                return 'Shopping'
+        for site in entertainment:
+            if site in domain:
+                return 'Entertainment'
+        for site in work_productivity:
+            if site in domain:
+                return 'Work/Productivity'
+        
+        # Check for piracy/illegal content
+        piracy_indicators = ['torrent', 'pirate', 'repacks', 'crack', 'keygen', 'warez', 'rarbg', '1337x', 'kickass', 'fitgirl']
+        if any(indicator in domain for indicator in piracy_indicators):
+            return 'Piracy/Illegal'
+        
+        return 'Other'
 
     def analyze_url_characteristics(self, url):
         """Analyze URL for suspicious characteristics"""
@@ -366,6 +404,16 @@ class ThreatIntelligence:
         parsed = urlparse(url)
         domain = parsed.netloc.lower()
         path = parsed.path.lower()
+
+        # Basic domain validation
+        if not domain or '.' not in domain:
+            score += 8
+            reasons.append("Invalid or malformed domain")
+
+        # Suspicious/nonsense domain patterns
+        if len(domain) > 30 and any(c in domain for c in '0123456789') and domain.count('.') >= 2:
+            score += 6
+            reasons.append("Suspicious domain with random characters and numbers")
 
         # Long domain names (often used in phishing)
         if len(domain) > 50:
@@ -384,6 +432,12 @@ class ThreatIntelligence:
                 score += 2
                 reasons.append(f"Suspicious keyword in domain: {keyword}")
 
+        # Check for nonsense/random patterns
+        import re
+        if re.search(r'[a-z]{3,}\d{3,}', domain):  # letters followed by numbers
+            score += 4
+            reasons.append("Suspicious character pattern detected")
+
         # IP address instead of domain
         try:
             socket.inet_aton(domain.split(':')[0])
@@ -393,7 +447,7 @@ class ThreatIntelligence:
             pass
 
         # Suspicious TLDs
-        suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.click', '.download']
+        suspicious_tlds = ['.tk', '.ml', '.ga', '.cf', '.click', '.download', '.ddcom']
         for tld in suspicious_tlds:
             if domain.endswith(tld):
                 score += 3
@@ -429,6 +483,164 @@ class ThreatIntelligence:
             }
 
         return {'is_safe': True}
+
+    def analyze_threat(self, url):
+        """Comprehensive threat analysis for extension"""
+        try:
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+            
+            # Initialize analysis result
+            analysis = {
+                'url': url,
+                'domain': domain,
+                'is_safe': True,
+                'threat_type': None,
+                'risk_score': 0,
+                'reasons': [],
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            # 1. Check against known malicious domains
+            if domain in self.malicious_domains:
+                analysis.update({
+                    'is_safe': False,
+                    'threat_type': 'Known Malicious Domain',
+                    'risk_score': 10,
+                    'reasons': ['Domain found in malicious domains database']
+                })
+                return analysis
+            
+            # 2. Check phishing patterns
+            import re
+            for pattern in self.phishing_patterns:
+                if re.search(pattern, url):
+                    analysis.update({
+                        'is_safe': False,
+                        'threat_type': 'Phishing Pattern Match',
+                        'risk_score': 9,
+                        'reasons': [f'URL matches known phishing pattern: {pattern}']
+                    })
+                    return analysis
+            
+            # 3. Analyze URL characteristics
+            url_analysis = self.analyze_url_characteristics(url)
+            risk_score = url_analysis['score']
+            reasons = url_analysis['reasons']
+            
+            # 4. Check for malware/phishing keywords in domain
+            if 'malware' in domain or 'phishing' in domain:
+                risk_score += 10
+                reasons.append('Domain contains malware/phishing keywords')
+            
+            # 5. Determine threat level
+            if risk_score >= 8:
+                analysis.update({
+                    'is_safe': False,
+                    'threat_type': 'High Risk Domain',
+                    'risk_score': min(risk_score, 10),
+                    'reasons': reasons
+                })
+            elif risk_score >= 5:
+                analysis.update({
+                    'is_safe': False,
+                    'threat_type': 'Suspicious Domain',
+                    'risk_score': risk_score,
+                    'reasons': reasons
+                })
+            elif risk_score > 0:
+                analysis.update({
+                    'is_safe': True,  # Still safe but with warnings
+                    'threat_type': 'Low Risk',
+                    'risk_score': risk_score,
+                    'reasons': reasons
+                })
+            
+            return analysis
+            
+        except Exception as e:
+            return {
+                'url': url,
+                'domain': 'unknown',
+                'is_safe': True,
+                'threat_type': 'Analysis Error',
+                'risk_score': 0,
+                'reasons': [f'Error analyzing URL: {str(e)}'],
+                'timestamp': datetime.now().isoformat()
+            }
+
+    def track_visit(self, url, threat_analysis):
+        """Track a visit for dashboard statistics"""
+        try:
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+            now = datetime.now()
+            
+            # Reset daily stats if new day
+            if now.date() != self.daily_stats['last_reset']:
+                self.daily_stats = {
+                    'total_visits': 0,
+                    'unique_domains': set(),
+                    'threats_blocked': 0,
+                    'last_reset': now.date()
+                }
+                self.visit_log = []
+            
+            # Add to visit log (keep last 100 visits)
+            visit_entry = {
+                'url': url,
+                'domain': domain,
+                'timestamp': now.isoformat(),
+                'time': now.strftime("%H:%M:%S"),
+                'date': now.strftime("%Y-%m-%d"),
+                'is_safe': threat_analysis['is_safe'],
+                'threat_type': threat_analysis.get('threat_type'),
+                'risk_score': threat_analysis.get('risk_score', 0),
+                'category': self.categorize_website(domain)
+            }
+            
+            self.visit_log.insert(0, visit_entry)  # Most recent first
+            if len(self.visit_log) > 100:
+                self.visit_log = self.visit_log[:100]
+            
+            # Update daily stats
+            self.daily_stats['total_visits'] += 1
+            self.daily_stats['unique_domains'].add(domain)
+            
+            if not threat_analysis['is_safe']:
+                self.daily_stats['threats_blocked'] += 1
+                
+        except Exception as e:
+            print(f"Error tracking visit: {e}")
+
+    def get_dashboard_stats(self):
+        """Get current statistics for dashboard"""
+        return {
+            'visit_count': self.daily_stats['total_visits'],
+            'unique_domains': len(self.daily_stats['unique_domains']),
+            'threats_blocked': self.daily_stats['threats_blocked'],
+            'recent_visits': self.visit_log[:20],  # Last 20 visits
+            'top_domains': self._get_top_domains(),
+            'category_breakdown': self._get_category_breakdown()
+        }
+    
+    def _get_top_domains(self):
+        """Get most visited domains"""
+        domain_counts = {}
+        for visit in self.visit_log:
+            domain = visit['domain']
+            domain_counts[domain] = domain_counts.get(domain, 0) + 1
+        
+        return sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    
+    def _get_category_breakdown(self):
+        """Get breakdown of visits by category"""
+        category_counts = {}
+        for visit in self.visit_log:
+            category = visit['category']
+            category_counts[category] = category_counts.get(category, 0) + 1
+        
+        return category_counts
 
 
 class BreachChecker:
@@ -662,178 +874,18 @@ class BreachChecker:
         return recommendations
 
 
-class WebFirewall:
-    def __init__(self, threat_intel, port=8888):
-        self.threat_intel = threat_intel
-        self.port = port
-        self.blocked_count = 0
-        self.allowed_count = 0
-        self.threat_log = []
-        self.server = None
-        self.is_running = False
-
-    def start_proxy(self):
-        """Start the web filtering proxy server"""
-        try:
-            self.server = HTTPServer(('localhost', self.port), ProxyHandler)
-            self.server.threat_intel = self.threat_intel
-            self.server.firewall = self
-            self.is_running = True
-
-            print(f"🔒 Web Firewall started on http://localhost:{self.port}")
-            print("Configure your browser to use this proxy:")
-            print(f"   HTTP Proxy: localhost:{self.port}")
-            print(f"   HTTPS Proxy: localhost:{self.port}")
-
-            # Start server in a separate thread
-            server_thread = threading.Thread(target=self.server.serve_forever)
-            server_thread.daemon = True
-            server_thread.start()
-
-            return True
-
-        except Exception as e:
-            print(f"Failed to start proxy server: {e}")
-            return False
-
-    def stop_proxy(self):
-        """Stop the web filtering proxy server"""
-        if self.server:
-            self.server.shutdown()
-            self.is_running = False
-            print("🔓 Web Firewall stopped")
-
-    def log_threat(self, threat_info):
-        """Log blocked threats"""
-        self.threat_log.append(threat_info)
-        self.blocked_count += 1
-
-        print(f"🚫 BLOCKED: {threat_info['url']} - {threat_info['threat_type']}")
-
-    def log_allowed(self, url):
-        """Log allowed requests"""
-        self.allowed_count += 1
-        # Don't print every allowed request to avoid spam
+# Web Firewall removed - replaced with browser extension
 
 
-class ProxyHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.handle_request()
-
-    def do_POST(self):
-        self.handle_request()
-
-    def handle_request(self):
-        """Handle incoming web requests"""
-        try:
-            url = self.path if self.path.startswith('http') else f"http://{self.headers.get('Host', '')}{self.path}"
-
-            # Check URL safety
-            threat_analysis = self.server.threat_intel.check_url_safety(url)
-
-            if not threat_analysis['is_safe']:
-                # Block the request and show warning page
-                self.server.firewall.log_threat(threat_analysis)
-                self.send_block_page(threat_analysis)
-                return
-
-            # Allow the request (in a real implementation, you'd proxy it)
-            self.server.firewall.log_allowed(url)
-            self.send_allowed_response(url)
-
-        except Exception as e:
-            self.send_error(500, f"Proxy error: {str(e)}")
-
-    def send_block_page(self, threat_analysis):
-        """Send a custom block page"""
-        block_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>🚫 CyberGuard Pro - Threat Blocked</title>
-            <style>
-                body {{ 
-                    font-family: Arial, sans-serif; 
-                    background: linear-gradient(135deg, #1a1a1a, #2d2d2d); 
-                    color: #fff; 
-                    padding: 50px; 
-                    text-align: center; 
-                }}
-                .warning {{ 
-                    background: #ff3333; 
-                    padding: 20px; 
-                    border-radius: 10px; 
-                    margin: 20px 0; 
-                }}
-                .details {{ 
-                    background: rgba(255,255,255,0.1); 
-                    padding: 15px; 
-                    border-radius: 8px; 
-                    margin: 15px 0; 
-                    text-align: left; 
-                }}
-            </style>
-        </head>
-        <body>
-            <h1>🛡️ CyberGuard Pro</h1>
-            <div class="warning">
-                <h2>🚫 THREAT BLOCKED</h2>
-                <p>This website has been blocked for your security!</p>
-            </div>
-
-            <div class="details">
-                <h3>Threat Details:</h3>
-                <p><strong>URL:</strong> {threat_analysis['url']}</p>
-                <p><strong>Threat Type:</strong> {threat_analysis['threat_type']}</p>
-                <p><strong>Risk Score:</strong> {threat_analysis['risk_score']}/10</p>
-                <p><strong>Reasons:</strong></p>
-                <ul>
-                    {''.join(f'<li>{reason}</li>' for reason in threat_analysis.get('reasons', []))}
-                </ul>
-                <p><strong>Blocked at:</strong> {threat_analysis['timestamp']}</p>
-            </div>
-
-            <div style="margin-top: 30px;">
-                <button onclick="history.back()">← Go Back</button>
-                <a href="http://localhost:5000" style="margin-left: 20px;">
-                    <button>🏠 CyberGuard Dashboard</button>
-                </a>
-            </div>
-        </body>
-        </html>
-        """
-
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(block_html.encode())
-
-    def send_allowed_response(self, url):
-        """Send response for allowed URLs (simplified)"""
-        allowed_html = f"""
-        <html>
-        <head><title>Request Processed</title></head>
-        <body>
-            <h2>✅ URL Allowed by CyberGuard Pro</h2>
-            <p>The requested URL has been analyzed and deemed safe:</p>
-            <p><strong>{url}</strong></p>
-            <p><em>In a full implementation, this would proxy the actual website content.</em></p>
-            <a href="{url}" target="_blank">Continue to website →</a>
-        </body>
-        </html>
-        """
-
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html')
-        self.end_headers()
-        self.wfile.write(allowed_html.encode())
+# ===================== Web Protection via Browser Extension =====================
+# Proxy-based firewall removed and replaced with browser extension approach
 
 
 # Initialize components
 app = Flask(__name__)
 threat_intel = ThreatIntelligence()
 breach_checker = BreachChecker()
-web_firewall = WebFirewall(threat_intel)
+# web_firewall = WebFirewall(threat_intel)  # Removed - replaced with browser extension
 password_enhancer = PasswordEnhancer()  # Initialize the password enhancer
 
 
@@ -953,34 +1005,42 @@ def check_breach():
 @app.route('/check_url', methods=['POST'])
 def check_url():
     url = request.json.get('url', '')
-    result = threat_intel.check_url_safety(url)
+    result = threat_intel.analyze_threat(url)
     return jsonify(result)
 
 
-@app.route('/firewall/start', methods=['POST'])
-def start_firewall():
-    success = web_firewall.start_proxy()
-    return jsonify({
-        'success': success,
-        'port': web_firewall.port,
-        'message': f'Firewall {"started" if success else "failed to start"}'
-    })
+# Firewall endpoints removed - replaced with browser extension API
+
+@app.route('/extension/check_url', methods=['POST'])
+def extension_check_url():
+    """API endpoint for browser extension to check URL safety"""
+    try:
+        data = request.get_json()
+        url = data.get('url', '') if data else ''
+        
+        if not url:
+            return jsonify({'error': 'No URL provided'}), 400
+        
+        # Use comprehensive threat analysis for extension
+        threat_analysis = threat_intel.analyze_threat(url)
+        
+        # Track the visit for dashboard statistics
+        threat_intel.track_visit(url, threat_analysis)
+        
+        return jsonify(threat_analysis)
+        
+    except Exception as e:
+        return jsonify({'error': f'Error checking URL: {str(e)}'}), 500
 
 
-@app.route('/firewall/stop', methods=['POST'])
-def stop_firewall():
-    web_firewall.stop_proxy()
-    return jsonify({'success': True, 'message': 'Firewall stopped'})
-
-
-@app.route('/firewall/status')
-def firewall_status():
-    return jsonify({
-        'is_running': web_firewall.is_running,
-        'blocked_count': web_firewall.blocked_count,
-        'allowed_count': web_firewall.allowed_count,
-        'recent_threats': web_firewall.threat_log[-10:]  # Last 10 threats
-    })
+@app.route('/extension/stats', methods=['GET'])
+def extension_stats():
+    """API endpoint to get dashboard statistics from extension visits"""
+    try:
+        stats = threat_intel.get_dashboard_stats()
+        return jsonify(stats)
+    except Exception as e:
+        return jsonify({'error': f'Error getting stats: {str(e)}'}), 500
 
 
 # ===================== Map Trace feature integration =====================

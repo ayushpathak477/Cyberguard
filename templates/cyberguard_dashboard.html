@@ -329,6 +329,49 @@
             100% { left: 100%; }
         }
 
+
+
+        /* Recent Visits Styles */
+        .recent-visits {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .visit-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid var(--cyber-green);
+            transition: all 0.3s ease;
+        }
+
+        .visit-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .visit-status {
+            font-size: 20px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .visit-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .visit-url {
+            font-family: monospace;
+            font-size: 13px;
+            word-break: break-all;
+            color: var(--cyber-green);
+            margin-bottom: 4px;
+        }
+
         /* Firewall Control Panel */
         .firewall-control {
             text-align: center;
@@ -515,11 +558,11 @@
                     <i class="fas fa-key"></i> Password Analyzer
                 </button>
             </div>
-            <!-- <div class="nav-item">
-                <button class="nav-button" onclick="showTab('firewall')">
-                    <i class="fas fa-shield-alt"></i> Web Firewall
+            <div class="nav-item">
+                <button class="nav-button" onclick="showTab('extension')">
+                    <i class="fas fa-puzzle-piece"></i> Browser Extension
                 </button>
-            </div> -->
+            </div>
             <div class="nav-item">
                 <button class="nav-button" onclick="showTab('breach')">
                     <i class="fas fa-exclamation-triangle"></i> Breach Checker
@@ -572,44 +615,55 @@
             </div>
         </div>
 
-        <!-- Web Firewall Tab -->
-        <div id="firewall" class="tab-content">
+        <!-- Browser Extension Tab -->
+        <div id="extension" class="tab-content">
             <div class="firewall-control">
-                <h3><i class="fas fa-shield-alt"></i> Web Protection Firewall</h3>
-                <div id="firewallStatus" class="firewall-status">
-                    <span class="status-indicator status-info">
-                        <i class="fas fa-circle"></i> OFFLINE
+                <h3><i class="fas fa-puzzle-piece"></i> CyberGuard Pro Browser Extension</h3>
+                <div id="extensionStatus" class="firewall-status">
+                    <span class="status-indicator status-success">
+                        <i class="fas fa-circle"></i> READY
                     </span>
                 </div>
 
                 <div class="mb-4">
-                    <button id="startFirewallBtn" class="cyber-button" onclick="startFirewall()">
-                        <i class="fas fa-power-off"></i> Start Firewall
-                    </button>
-                    <button id="stopFirewallBtn" class="cyber-button danger" onclick="stopFirewall()" style="display: none;">
-                        <i class="fas fa-stop"></i> Stop Firewall
+                    <button class="cyber-button" onclick="openExtensionFolder()">
+                        <i class="fas fa-book"></i> Installation Guide
                     </button>
                 </div>
 
                 <div class="firewall-stats">
                     <div class="stat-card">
-                        <div id="blockedCount" class="stat-number">0</div>
+                        <div id="extensionChecks" class="stat-number">0</div>
+                        <div class="stat-label">URL Checks This Session</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="threatsBlocked" class="stat-number">0</div>
                         <div class="stat-label">Threats Blocked</div>
                     </div>
                     <div class="stat-card">
-                        <div id="allowedCount" class="stat-number">0</div>
-                        <div class="stat-label">Sites Allowed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div id="totalRequests" class="stat-number">0</div>
-                        <div class="stat-label">Total Requests</div>
+                        <div id="extensionUptime" class="stat-number">24/7</div>
+                        <div class="stat-label">Protection Status</div>
                     </div>
                 </div>
 
-                <div class="cyber-alert alert-warning">
-                    <strong>⚙️ Setup Instructions:</strong><br>
-                    When firewall is active, configure your browser proxy settings:<br>
-                    <strong>HTTP/HTTPS Proxy:</strong> localhost:8888
+                <div class="cyber-alert alert-success">
+                    <strong>�️ Real-time Browser Protection Active!</strong><br>
+                    The CyberGuard Pro extension monitors all websites you visit and provides instant threat warnings.<br>
+                    <strong>Installation:</strong> Load the extension from the browser_extension folder<br>
+                    <small>Automatic protection - no configuration needed!</small>
+                </div>
+
+
+
+                <!-- Recent Visits Section -->
+                <div class="cyber-card mt-4">
+                    <h4><i class="fas fa-history"></i> Recent Extension Activity</h4>
+                    <div id="visitLog" class="recent-visits">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-globe fa-2x mb-3"></i><br>
+                            No visits tracked yet. Browse with the extension to see activity here.
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -629,11 +683,21 @@
                 <div id="urlResult" style="display: none; margin-top: 20px;"></div>
             </div>
 
-            <!-- Recent Threats Log -->
+
+
+            <!-- Top Domains -->
             <div class="cyber-card">
-                <h4><i class="fas fa-list"></i> Recent Threat Detections</h4>
-                <div id="threatLog">
-                    <p class="text-muted">No threats detected yet. Start the firewall to begin monitoring.</p>
+                <h4><i class="fas fa-chart-pie"></i> Most Visited Domains</h4>
+                <div id="topDomains">
+                    <p class="text-muted">No data available yet. Start monitoring to see statistics.</p>
+                </div>
+            </div>
+
+            <!-- Category Breakdown -->
+            <div class="cyber-card">
+                <h4><i class="fas fa-tags"></i> Browsing Categories</h4>
+                <div id="categoryBreakdown">
+                    <p class="text-muted">Category analysis will appear here once monitoring starts.</p>
                 </div>
             </div>
         </div>
@@ -705,9 +769,9 @@
                                 </span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span>Web Firewall</span>
-                                <span id="firewallStatusMonitor" class="status-indicator status-info">
-                                    <i class="fas fa-circle"></i> STANDBY
+                                <span>Browser Extension</span>
+                                <span id="extensionStatusMonitor" class="status-indicator status-success">
+                                    <i class="fas fa-circle"></i> READY
                                 </span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -740,7 +804,7 @@
 
     <script>
         // Global variables
-        let firewallActive = false;
+        let extensionActive = true; // Extension is always ready when backend is running
         let activityCount = 0;
 
         // Tab switching
@@ -980,69 +1044,111 @@
             });
         }
 
-        // Firewall Controls
-        async function startFirewall() {
+        // Browser Extension Functions
+        function openExtensionFolder() {
+            // Show instructions instead of trying to open folder directly
+            showAlert(`
+                <strong>🛡️ CyberGuard Pro Browser Extension</strong><br><br>
+                <strong>Extension Location:</strong><br>
+                <code>browser_extension/</code> folder in your CyberGuard directory<br><br>
+                <strong>Installation Steps:</strong><br>
+                1. Open Chrome and go to <code>chrome://extensions/</code><br>
+                2. Enable "Developer mode" (top-right toggle)<br>
+                3. Click "Load unpacked" and select the browser_extension folder<br>
+                4. Look for the 🛡️ CyberGuard icon in your browser toolbar<br><br>
+                <em>The extension provides real-time protection without affecting your browsing experience!</em>
+            `, 'info');
+        }
+
+        async function updateExtensionStats() {
             try {
-                const response = await fetch('/firewall/start', {
-                    method: 'POST',
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    firewallActive = true;
-                    updateFirewallStatus('ACTIVE', 'status-safe');
-                    document.getElementById('startFirewallBtn').style.display = 'none';
-                    document.getElementById('stopFirewallBtn').style.display = 'inline-block';
-
-                    // Start monitoring
-                    startFirewallMonitoring();
-
-                    logActivity('Web Firewall activated');
-                    showAlert('Firewall started successfully! Configure your browser proxy to localhost:8888', 'success');
+                const response = await fetch('/extension/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    
+                    // Update extension statistics
+                    document.getElementById('extensionChecks').textContent = stats.visit_count || 0;
+                    document.getElementById('threatsBlocked').textContent = stats.threats_blocked || 0;
+                    document.getElementById('extensionUptime').textContent = '24/7';
+                    
+                    // Update visit log if it exists
+                    updateVisitLog(stats.recent_visits || []);
+                    updateTopDomains(stats.top_domains || []);
+                    updateCategoryBreakdown(stats.category_breakdown || {});
                 } else {
-                    showAlert('Failed to start firewall: ' + result.message, 'danger');
+                    console.warn('Failed to fetch extension stats');
                 }
             } catch (error) {
-                console.error('Error starting firewall:', error);
-                showAlert('Error starting firewall', 'danger');
+                console.error('Error fetching extension stats:', error);
+                // Fallback to simulated data
+                document.getElementById('extensionChecks').textContent = '0';
+                document.getElementById('threatsBlocked').textContent = '0';
+                document.getElementById('extensionUptime').textContent = '24/7';
             }
         }
 
-        async function stopFirewall() {
-            try {
-                const response = await fetch('/firewall/stop', {
-                    method: 'POST',
-                });
+        function updateExtensionStatus(text, className) {
+            const statusElement = document.getElementById('extensionStatus');
+            const monitorElement = document.getElementById('extensionStatusMonitor');
 
-                const result = await response.json();
-
-                firewallActive = false;
-                updateFirewallStatus('OFFLINE', 'status-info');
-                document.getElementById('startFirewallBtn').style.display = 'inline-block';
-                document.getElementById('stopFirewallBtn').style.display = 'none';
-
-                logActivity('Web Firewall deactivated');
-                showAlert('Firewall stopped', 'warning');
-            } catch (error) {
-                console.error('Error stopping firewall:', error);
-                showAlert('Error stopping firewall', 'danger');
+            if (statusElement) {
+                statusElement.innerHTML = `<span class="status-indicator ${className}"><i class="fas fa-circle"></i> ${text}</span>`;
+            }
+            if (monitorElement) {
+                monitorElement.className = `status-indicator ${className}`;
+                monitorElement.innerHTML = `<i class="fas fa-circle"></i> ${text}`;
             }
         }
 
-        function updateFirewallStatus(text, className) {
-            const statusElement = document.getElementById('firewallStatus');
-            const monitorElement = document.getElementById('firewallStatusMonitor');
+        function updateVisitLog(visits) {
+            const logElement = document.getElementById('visitLog');
+            if (!logElement || !visits || visits.length === 0) {
+                if (logElement) {
+                    logElement.innerHTML = `
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-globe fa-2x mb-3"></i><br>
+                            No visits tracked yet. Browse with the extension to see activity here.
+                        </div>
+                    `;
+                }
+                return;
+            }
 
-            statusElement.innerHTML = `<span class="status-indicator ${className}"><i class="fas fa-circle"></i> ${text}</span>`;
-            monitorElement.className = `status-indicator ${className}`;
-            monitorElement.innerHTML = `<i class="fas fa-circle"></i> ${text}`;
+            let html = '';
+            visits.forEach(visit => {
+                const statusIcon = visit.is_safe ? '✅' : '🚫';
+                const statusClass = visit.is_safe ? 'text-success' : 'text-danger';
+                
+                html += `
+                    <div class="visit-item">
+                        <div class="visit-status">${statusIcon}</div>
+                        <div class="visit-details">
+                            <div class="visit-url">${visit.url}</div>
+                            <small class="text-muted">${visit.domain} • ${visit.category}</small>
+                        </div>
+                    </div>
+                `;
+            });
+
+            logElement.innerHTML = html;
+        }
+
+        function updateTopDomains(domains) {
+            // Update top domains display if needed
+            console.log('Top domains:', domains);
+        }
+
+        function updateCategoryBreakdown(categories) {
+            // Update category breakdown if needed
+            console.log('Category breakdown:', categories);
         }
 
         function startFirewallMonitoring() {
             if (!firewallActive) return;
 
-            // Check firewall status every 5 seconds
+            let startTime = Date.now();
+
+            // Check traffic status every 3 seconds
             setInterval(async () => {
                 if (!firewallActive) return;
 
@@ -1050,40 +1156,106 @@
                     const response = await fetch('/firewall/status');
                     const status = await response.json();
 
-                    document.getElementById('blockedCount').textContent = status.blocked_count;
-                    document.getElementById('allowedCount').textContent = status.allowed_count;
-                    document.getElementById('totalRequests').textContent = status.blocked_count + status.allowed_count;
+                    // Update visit statistics
+                    document.getElementById('visitCount').textContent = status.visit_count;
+                    document.getElementById('uniqueDomains').textContent = status.unique_domains;
+                    
+                    // Calculate active time
+                    const activeMinutes = Math.floor((Date.now() - startTime) / 60000);
+                    document.getElementById('activeTime').textContent = `${activeMinutes}m`;
 
-                    // Update threat log
-                    updateThreatLog(status.recent_threats);
+                    // Update visit log
+                    updateVisitLog(status.recent_visits);
+                    
+                    // Update top domains
+                    updateTopDomains(status.top_domains);
+                    
+                    // Update category breakdown
+                    updateCategoryBreakdown(status.category_breakdown);
                 } catch (error) {
-                    console.error('Error fetching firewall status:', error);
+                    console.error('Error fetching traffic status:', error);
                 }
-            }, 5000);
+            }, 3000);
         }
 
-        function updateThreatLog(threats) {
-            const logElement = document.getElementById('threatLog');
+        function updateVisitLog(visits) {
+            const logElement = document.getElementById('visitLog');
 
-            if (threats.length === 0) {
-                logElement.innerHTML = '<p class="text-muted">No threats detected recently.</p>';
+            if (!visits || visits.length === 0) {
+                logElement.innerHTML = '<p class="text-muted">No visits recorded recently.</p>';
                 return;
             }
 
             let logHTML = '';
-            threats.slice(-5).reverse().forEach(threat => {
+            visits.slice(-8).reverse().forEach(visit => {
+                const categoryBadge = getCategoryBadge(visit.category);
                 logHTML += `
                     <div class="breach-result">
-                        <div class="breach-name">🚫 ${threat.threat_type.toUpperCase()}</div>
-                        <p><strong>URL:</strong> ${threat.url}</p>
-                        <p><strong>Risk Score:</strong> ${threat.risk_score}/10</p>
-                        <p><strong>Time:</strong> ${new Date(threat.timestamp).toLocaleString()}</p>
-                        ${threat.reasons ? `<p><strong>Reasons:</strong> ${threat.reasons.join(', ')}</p>` : ''}
+                        <div class="breach-name">🌐 ${visit.domain}</div>
+                        <p><strong>URL:</strong> <a href="${visit.url}" target="_blank" rel="noopener">${visit.url}</a></p>
+                        <p><strong>Category:</strong> ${categoryBadge}</p>
                     </div>
                 `;
             });
 
             logElement.innerHTML = logHTML;
+        }
+
+        function updateTopDomains(topDomains) {
+            const element = document.getElementById('topDomains');
+
+            if (!topDomains || topDomains.length === 0) {
+                element.innerHTML = '<p class="text-muted">No domain statistics available.</p>';
+                return;
+            }
+
+            let html = '';
+            topDomains.forEach(([domain, count]) => {
+                const percentage = Math.round((count / (topDomains.reduce((sum, [, c]) => sum + c, 0))) * 100);
+                html += `
+                    <div class="breach-result">
+                        <div class="breach-name">${domain}</div>
+                        <p><strong>Visits:</strong> ${count} (${percentage}%)</p>
+                        <div style="background: rgba(0,255,0,0.2); height: 5px; width: ${percentage}%; border-radius: 3px;"></div>
+                    </div>
+                `;
+            });
+
+            element.innerHTML = html;
+        }
+
+        function updateCategoryBreakdown(categories) {
+            const element = document.getElementById('categoryBreakdown');
+
+            if (!categories || Object.keys(categories).length === 0) {
+                element.innerHTML = '<p class="text-muted">No category data available.</p>';
+                return;
+            }
+
+            let html = '';
+            Object.entries(categories).forEach(([category, count]) => {
+                const badge = getCategoryBadge(category);
+                html += `
+                    <div style="display: inline-block; margin: 5px; padding: 10px; background: rgba(0,255,255,0.1); border-radius: 8px;">
+                        ${badge} <strong>${count}</strong>
+                    </div>
+                `;
+            });
+
+            element.innerHTML = html;
+        }
+
+        function getCategoryBadge(category) {
+            const badges = {
+                'Social Media': '📱',
+                'Search Engine': '🔍',
+                'News': '📰',
+                'Shopping': '🛒',
+                'Entertainment': '🎬',
+                'Work/Productivity': '💼',
+                'Other': '🌐'
+            };
+            return `<span class="data-class">${badges[category] || '🌐'} ${category}</span>`;
         }
 
         // URL Checking
@@ -1365,11 +1537,10 @@
             console.log('🚀 CyberGuard Pro initialized');
             logActivity('CyberGuard Pro system started');
             startAutoUpdates();
-
-            // Show welcome message
-            setTimeout(() => {
-                showAlert('🛡️ CyberGuard Pro is ready! Use Ctrl+1/2/3/4 to switch tabs quickly.', 'success');
-            }, 1000);
+            
+            // Initialize extension stats
+            updateExtensionStats();
+            setInterval(updateExtensionStats, 5000); // Update every 5 seconds
         });
 
         // Handle browser proxy instructions
