@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_cors import CORS
 import torch
 import torch.nn as nn
 import numpy as np
@@ -421,23 +422,28 @@ class ThreatIntelligence:
             score += 1
             reasons.append("Multiple subdomains detected")
 
-            # Suspicious keywords in domain
-            suspicious_keywords = ['secure', 'verify', 'update', 'suspended', 'limited', 'alert']
-            piracy_keywords = ['torrent', 'pirate', 'crack', 'keygen', 'repacks', 'warez', 'download', 'free-games']
-            
-            for keyword in suspicious_keywords:
-                if keyword in domain:
-                    score += 2
-                    reasons.append(f"Suspicious keyword in domain: {keyword}")
-            
-            for keyword in piracy_keywords:
-                if keyword in domain:
-                    score += 4
-                    reasons.append(f"Piracy-related keyword detected: {keyword}")        # IP address instead of domain
+        # Suspicious keywords in domain
+        suspicious_keywords = ['secure', 'verify', 'update', 'suspended', 'limited', 'alert']
+        piracy_keywords = ['torrent', 'pirate', 'crack', 'keygen', 'repacks', 'warez', 'download', 'free-games', '1337x']
+        
+        for keyword in suspicious_keywords:
+            if keyword in domain:
+                score += 2
+                reasons.append(f"Suspicious keyword in domain: {keyword}")
+        
+        for keyword in piracy_keywords:
+            if keyword in domain:
+                score += 4
+                reasons.append(f"Piracy-related keyword detected: {keyword}")
+        
+        # IP address instead of domain (but exclude localhost)
         try:
-            socket.inet_aton(domain.split(':')[0])
-            score += 5
-            reasons.append("Using IP address instead of domain name")
+            ip_part = domain.split(':')[0]
+            socket.inet_aton(ip_part)
+            # Don't flag localhost/127.0.0.1 as suspicious
+            if ip_part not in ['127.0.0.1', 'localhost', '0.0.0.0']:
+                score += 5
+                reasons.append("Using IP address instead of domain name")
         except socket.error:
             pass
 
@@ -496,7 +502,7 @@ class ThreatIntelligence:
                 'timestamp': datetime.now().isoformat()
             }
             
-            # 1. Check against known malicious domains
+            # 1. Check against known malicious domains (exact match)
             if domain in self.malicious_domains:
                 analysis.update({
                     'is_safe': False,
@@ -506,7 +512,23 @@ class ThreatIntelligence:
                 })
                 return analysis
             
-            # 2. Check phishing patterns
+            # 2. Check for known piracy/malicious domain patterns (catch all TLDs)
+            piracy_domains = ['1337x', 'thepiratebay', 'kickass', 'rarbg', 'torrentz', 'fitgirl', 
+                             'yts', 'eztv', 'limetorrents', 'zooqle', 'magnetdl', 'torlock',
+                             'skidrow', 'codex', 'cpy', 'reloaded', 'crackwatch']
+            
+            domain_without_tld = domain.split('.')[0]  # Get the main part before first dot
+            for piracy_name in piracy_domains:
+                if piracy_name in domain_without_tld or piracy_name in domain:
+                    analysis.update({
+                        'is_safe': False,
+                        'threat_type': 'Piracy/Illegal Content Site',
+                        'risk_score': 10,
+                        'reasons': [f'Known piracy domain detected: {piracy_name}']
+                    })
+                    return analysis
+            
+            # 3. Check phishing patterns
             import re
             for pattern in self.phishing_patterns:
                 if re.search(pattern, url):
@@ -518,17 +540,17 @@ class ThreatIntelligence:
                     })
                     return analysis
             
-            # 3. Analyze URL characteristics
+            # 4. Analyze URL characteristics
             url_analysis = self.analyze_url_characteristics(url)
             risk_score = url_analysis['score']
             reasons = url_analysis['reasons']
             
-            # 4. Check for malware/phishing keywords in domain
+            # 5. Check for malware/phishing keywords in domain
             if 'malware' in domain or 'phishing' in domain:
                 risk_score += 10
                 reasons.append('Domain contains malware/phishing keywords')
             
-            # 5. Determine threat level
+            # 6. Determine threat level
             if risk_score >= 8:
                 analysis.update({
                     'is_safe': False,
@@ -892,6 +914,7 @@ class HoneypotManager:
         self.init_database()
         self.honeypot_active = False
         self.attack_stats = {'total_attacks': 0, 'countries': {}, 'services': {}}
+        self.session_attacks = []  # Track attacks for current session only
         
     def init_database(self):
         """Initialize honeypot database"""
@@ -953,6 +976,27 @@ class HoneypotManager:
               user_agent, fingerprint))
         conn.commit()
         conn.close()
+        
+        # Create attack record for session tracking
+        attack_record = {
+            'timestamp': datetime.now().isoformat(),
+            'source_ip': source_ip,
+            'source_port': source_port,
+            'service': service,
+            'attack_type': attack_type,
+            'payload': payload,
+            'credentials': credentials,
+            'session_id': session_id,
+            'country': location['country'],
+            'asn': location['as'],
+            'user_agent': user_agent,
+            'fingerprint': fingerprint
+        }
+        
+        # Add to session attacks (keep last 100)
+        self.session_attacks.insert(0, attack_record)
+        if len(self.session_attacks) > 100:
+            self.session_attacks = self.session_attacks[:100]
         
         # Update attack statistics
         self.attack_stats['total_attacks'] += 1
@@ -1259,6 +1303,7 @@ def stop_enhanced_honeypots():
 # Initialize components
 honeypot_manager = HoneypotManager()
 app = Flask(__name__)
+CORS(app)  # Enable CORS for browser extension
 threat_intel = ThreatIntelligence()
 breach_checker = BreachChecker()
 # web_firewall = WebFirewall(threat_intel)  # Removed - replaced with browser extension
@@ -1582,86 +1627,52 @@ def stop_honeypot_api():
 
 @app.route('/api/honeypot/attacks')
 def get_honeypot_attacks():
+    """Get attacks from current session only"""
     try:
-        conn = sqlite3.connect('cyberguard.db')
-        cursor = conn.cursor()
-        cursor.execute('''
-            SELECT * FROM honeypot_attacks 
-            ORDER BY timestamp DESC LIMIT 100
-        ''')
-        
-        attacks = []
-        for row in cursor.fetchall():
-            attacks.append({
-                'id': row[0], 'timestamp': row[1], 'source_ip': row[2], 'source_port': row[3],
-                'service': row[4], 'attack_type': row[5], 'payload': row[6], 'credentials': row[7],
-                'session_id': row[8], 'country': row[9], 'asn': row[10], 'user_agent': row[11],
-                'fingerprint': row[12]
-            })
-        
-        conn.close()
-        return jsonify(attacks)
+        # Return session attacks instead of database attacks
+        return jsonify(honeypot_manager.session_attacks)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/honeypot/stats')
 def get_honeypot_stats():
+    """Get statistics from current session attacks only"""
     try:
-        conn = sqlite3.connect('cyberguard.db')
-        cursor = conn.cursor()
+        session_attacks = honeypot_manager.session_attacks
         
         # Attack statistics by service
-        cursor.execute('''
-            SELECT service, COUNT(*) as count 
-            FROM honeypot_attacks 
-            GROUP BY service
-        ''')
-        service_stats = dict(cursor.fetchall())
+        service_stats = {}
+        for attack in session_attacks:
+            service = attack['service']
+            service_stats[service] = service_stats.get(service, 0) + 1
         
         # Attack statistics by country
-        cursor.execute('''
-            SELECT country, COUNT(*) as count 
-            FROM honeypot_attacks 
-            GROUP BY country 
-            ORDER BY count DESC LIMIT 10
-        ''')
-        country_stats = dict(cursor.fetchall())
-        
-        # Recent attack trends (last 24 hours)
-        yesterday = (datetime.now() - timedelta(days=1)).isoformat()
-        cursor.execute('''
-            SELECT strftime('%H', timestamp) as hour, COUNT(*) as count
-            FROM honeypot_attacks 
-            WHERE timestamp > ?
-            GROUP BY hour
-            ORDER BY hour
-        ''', (yesterday,))
-        hourly_stats = dict(cursor.fetchall())
+        country_stats = {}
+        for attack in session_attacks:
+            country = attack['country']
+            country_stats[country] = country_stats.get(country, 0) + 1
         
         # Top attacking IPs
-        cursor.execute('''
-            SELECT source_ip, COUNT(*) as count, country
-            FROM honeypot_attacks 
-            GROUP BY source_ip 
-            ORDER BY count DESC LIMIT 10
-        ''')
-        top_attackers = [{'ip': row[0], 'count': row[1], 'country': row[2]}
-                         for row in cursor.fetchall()]
+        ip_counts = {}
+        for attack in session_attacks:
+            ip = attack['source_ip']
+            if ip not in ip_counts:
+                ip_counts[ip] = {'count': 0, 'country': attack['country']}
+            ip_counts[ip]['count'] += 1
+        
+        top_attackers = [
+            {'ip': ip, 'count': data['count'], 'country': data['country']}
+            for ip, data in sorted(ip_counts.items(), key=lambda x: x[1]['count'], reverse=True)[:10]
+        ]
         
         # Total unique IPs
-        cursor.execute('''
-            SELECT COUNT(DISTINCT source_ip) FROM honeypot_attacks
-        ''')
-        unique_ips = cursor.fetchone()[0]
-        
-        conn.close()
+        unique_ips = len(ip_counts)
         
         return jsonify({
-            'total_attacks': honeypot_manager.attack_stats['total_attacks'],
+            'total_attacks': len(session_attacks),
             'service_stats': service_stats,
             'country_stats': country_stats,
-            'hourly_stats': hourly_stats,
             'top_attackers': top_attackers,
             'unique_ips': unique_ips,
             'active_honeypots': honeypot_manager.honeypot_active
