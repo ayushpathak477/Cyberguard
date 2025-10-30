@@ -4,3 +4,4 @@ pandas
 torch
 numpy        
 geoip2
+dimag
