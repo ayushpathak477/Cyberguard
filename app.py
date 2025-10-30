@@ -610,28 +610,38 @@ class ThreatIntelligence:
 
     def get_dashboard_stats(self):
         """Get current statistics for dashboard"""
+        # Filter out localhost and specific ignored domains
+        ignored_domains = ['127.0.0.1', 'localhost', 'gxcorner.games']
+        
+        filtered_visits = [
+            visit for visit in self.visit_log 
+            if not any(ignored in visit['domain'] for ignored in ignored_domains)
+        ]
+        
         return {
-            'visit_count': self.daily_stats['total_visits'],
-            'unique_domains': len(self.daily_stats['unique_domains']),
+            'visit_count': len(filtered_visits),
+            'unique_domains': len(set(v['domain'] for v in filtered_visits)),
             'threats_blocked': self.daily_stats['threats_blocked'],
-            'recent_visits': self.visit_log[:20],  # Last 20 visits
-            'top_domains': self._get_top_domains(),
-            'category_breakdown': self._get_category_breakdown()
+            'recent_visits': filtered_visits[:20],  # Last 20 visits (filtered)
+            'top_domains': self._get_top_domains(filtered_visits),
+            'category_breakdown': self._get_category_breakdown(filtered_visits)
         }
     
-    def _get_top_domains(self):
+    def _get_top_domains(self, visits=None):
         """Get most visited domains"""
+        visits_to_use = visits if visits is not None else self.visit_log
         domain_counts = {}
-        for visit in self.visit_log:
+        for visit in visits_to_use:
             domain = visit['domain']
             domain_counts[domain] = domain_counts.get(domain, 0) + 1
         
         return sorted(domain_counts.items(), key=lambda x: x[1], reverse=True)[:10]
     
-    def _get_category_breakdown(self):
+    def _get_category_breakdown(self, visits=None):
         """Get breakdown of visits by category"""
+        visits_to_use = visits if visits is not None else self.visit_log
         category_counts = {}
-        for visit in self.visit_log:
+        for visit in visits_to_use:
             category = visit['category']
             category_counts[category] = category_counts.get(category, 0) + 1
         
