@@ -95,13 +95,24 @@ function showThreatWarning(threatData) {
     // Create warning overlay
     const overlay = document.createElement('div');
     overlay.id = 'cyberguard-warning';
+    // Check theme from localStorage
+    const isDarkTheme = localStorage.getItem('theme') === 'dark';
+    const bgColor = isDarkTheme ? '#1a1a1a' : '#ffffff';
+    const textColor = isDarkTheme ? '#ffffff' : '#212529';
+    const panelBg = isDarkTheme ? '#f8f9fa' : '#f8f9fa';
+    const borderColor = isDarkTheme ? '#333333' : '#dee2e6';
+    const redColor = isDarkTheme ? '#ff0040' : '#dc3545';
+    const greenColor = isDarkTheme ? '#00ff41' : '#28a745';
+    const grayColor = isDarkTheme ? '#cccccc' : '#6c757d';
+
     overlay.style.cssText = `
         position: fixed !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        background: rgba(0, 0, 0, 0.95) !important;
+        background: rgba(0, 0, 0, 0.85) !important;
+        backdrop-filter: blur(10px) !important;
         z-index: 2147483647 !important;
         display: flex !important;
         align-items: center !important;
@@ -113,47 +124,49 @@ function showThreatWarning(threatData) {
 
     overlay.innerHTML = `
         <div style="
-            background: linear-gradient(135deg, #1a1a1a, #2d2d2d) !important;
-            color: white !important;
+            background: ${bgColor} !important;
+            color: ${textColor} !important;
             padding: 40px !important;
             border-radius: 15px !important;
             max-width: 500px !important;
             margin: 20px !important;
             text-align: center !important;
-            border: 2px solid #ff3333 !important;
-            box-shadow: 0 0 30px rgba(255, 51, 51, 0.5) !important;
+            border: 2px solid ${redColor} !important;
+            box-shadow: 0 0 30px rgba(220, 53, 69, 0.3) !important;
             font-family: inherit !important;
         ">
             <div style="margin-bottom: 20px !important;">
-                <h1 style="color: #ff3333 !important; margin: 0 0 10px 0 !important; font-size: 24px !important;">🛡️ CyberGuard Pro</h1>
-                <p style="margin: 0 !important; opacity: 0.8 !important; font-size: 14px !important;">Website Security Protection</p>
+                <h1 style="color: ${redColor} !important; margin: 0 0 10px 0 !important; font-size: 24px !important;">🛡️ CyberGuard Pro</h1>
+                <p style="margin: 0 !important; color: ${grayColor} !important; font-size: 14px !important;">Website Security Protection</p>
             </div>
             
             <div style="
-                background: #ff3333 !important;
+                background: ${redColor} !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
                 margin: 20px 0 !important;
+                color: white !important;
             ">
-                <h2 style="margin: 0 !important; font-size: 22px !important;">🚫 THREAT DETECTED</h2>
-                <p style="margin: 10px 0 0 0 !important; font-size: 16px !important;">This website may be dangerous!</p>
+                <h2 style="margin: 0 !important; font-size: 22px !important; color: white !important;">🚫 THREAT DETECTED</h2>
+                <p style="margin: 10px 0 0 0 !important; font-size: 16px !important; color: white !important;">This website may be dangerous!</p>
             </div>
             
             <div style="
-                background: rgba(255,255,255,0.1) !important;
+                background: ${panelBg} !important;
                 padding: 20px !important;
                 border-radius: 10px !important;
                 margin: 20px 0 !important;
                 text-align: left !important;
+                border: 1px solid ${borderColor} !important;
             ">
-                <h3 style="margin: 0 0 15px 0 !important; color: #ff3333 !important; font-size: 16px !important;">Threat Details:</h3>
-                <p style="margin: 5px 0 !important; font-size: 14px !important;"><strong>URL:</strong> ${threatData.url}</p>
-                <p style="margin: 5px 0 !important; font-size: 14px !important;"><strong>Threat Type:</strong> ${threatData.threat_type || 'Unknown'}</p>
-                <p style="margin: 5px 0 !important; font-size: 14px !important;"><strong>Risk Score:</strong> ${threatData.risk_score}/10</p>
+                <h3 style="margin: 0 0 15px 0 !important; color: ${redColor} !important; font-size: 16px !important;">Threat Details:</h3>
+                <p style="margin: 5px 0 !important; font-size: 14px !important; color: ${textColor} !important;"><strong>URL:</strong> ${threatData.url}</p>
+                <p style="margin: 5px 0 !important; font-size: 14px !important; color: ${textColor} !important;"><strong>Threat Type:</strong> ${threatData.threat_type || 'Unknown'}</p>
+                <p style="margin: 5px 0 !important; font-size: 14px !important; color: ${textColor} !important;"><strong>Risk Score:</strong> ${threatData.risk_score}/10</p>
                 ${threatData.reasons && threatData.reasons.length > 0 ? 
                     `<div style="margin-top: 10px !important;">
-                        <p style="margin: 5px 0 !important; font-size: 14px !important;"><strong>Reasons:</strong></p>
-                        <ul style="margin: 5px 0 !important; padding-left: 20px !important; font-size: 13px !important;">
+                        <p style="margin: 5px 0 !important; font-size: 14px !important; color: ${textColor} !important;"><strong>Reasons:</strong></p>
+                        <ul style="margin: 5px 0 !important; padding-left: 20px !important; font-size: 13px !important; color: ${textColor} !important;">
                             ${threatData.reasons.map(reason => `<li style="margin: 3px 0 !important;">${reason}</li>`).join('')}
                         </ul>
                     </div>` : ''
@@ -164,7 +177,7 @@ function showThreatWarning(threatData) {
                 <button id="cyberguard-go-back" style="
                     padding: 12px 20px !important;
                     margin: 0 10px !important;
-                    background: #4CAF50 !important;
+                    background: ${greenColor} !important;
                     color: white !important;
                     border: none !important;
                     border-radius: 5px !important;
@@ -176,9 +189,9 @@ function showThreatWarning(threatData) {
                 <button id="cyberguard-continue" style="
                     padding: 12px 20px !important;
                     margin: 0 10px !important;
-                    background: rgba(255,255,255,0.1) !important;
+                    background: ${grayColor} !important;
                     color: white !important;
-                    border: 1px solid #666 !important;
+                    border: none !important;
                     border-radius: 5px !important;
                     cursor: pointer !important;
                     font-size: 16px !important;
@@ -186,7 +199,7 @@ function showThreatWarning(threatData) {
                 ">Continue Anyway</button>
             </div>
             
-            <p style="margin-top: 20px !important; font-size: 12px !important; color: #aaa !important; opacity: 0.7 !important;">
+            <p style="margin-top: 20px !important; font-size: 12px !important; color: ${grayColor} !important;">
                 Protected by CyberGuard Pro Browser Extension
             </p>
         </div>

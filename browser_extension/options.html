@@ -4,12 +4,31 @@
     <meta charset="utf-8">
     <title>CyberGuard Pro - Settings</title>
     <style>
+        :root {
+            --bg-gradient-1: #1a1a1a;
+            --bg-gradient-2: #2d2d2d;
+            --text-color: #ffffff;
+            --card-bg: #1a1a1a;
+            --border-color: #444444;
+            --green: #00ff41;
+        }
+
+        [data-theme="light"] {
+            --bg-gradient-1: #f5f7fa;
+            --bg-gradient-2: #c3cfe2;
+            --text-color: #2c3e50;
+            --card-bg: white;
+            --border-color: #bdc3c7;
+            --green: #28a745;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
             min-height: 100vh;
+            transition: all 0.3s ease;
         }
 
         .container {
@@ -24,29 +43,31 @@
         }
 
         .header h1 {
-            color: #2c3e50;
+            color: var(--text-color);
             margin: 0;
             font-size: 32px;
         }
 
         .header .subtitle {
-            color: #7f8c8d;
+            color: var(--text-color);
+            opacity: 0.7;
             margin: 10px 0;
             font-size: 16px;
         }
 
         .card {
-            background: white;
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 30px;
             margin: 20px 0;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
 
         .card h2 {
-            color: #2c3e50;
+            color: var(--text-color);
             margin-top: 0;
-            border-bottom: 2px solid #3498db;
+            border-bottom: 2px solid var(--green);
             padding-bottom: 10px;
         }
 
@@ -58,12 +79,13 @@
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
-            color: #34495e;
+            color: var(--text-color);
         }
 
         .setting-description {
             font-size: 14px;
-            color: #7f8c8d;
+            color: var(--text-color);
+            opacity: 0.7;
             margin-bottom: 10px;
         }
 
@@ -86,14 +108,17 @@
         input[type="text"], input[type="url"] {
             width: 100%;
             padding: 10px;
-            border: 2px solid #bdc3c7;
+            border: 2px solid var(--border-color);
             border-radius: 5px;
             font-size: 14px;
             box-sizing: border-box;
+            background: var(--card-bg);
+            color: var(--text-color);
+            transition: all 0.3s ease;
         }
 
         input[type="text"]:focus, input[type="url"]:focus {
-            border-color: #3498db;
+            border-color: var(--green);
             outline: none;
         }
 
@@ -108,12 +133,12 @@
         }
 
         .btn-primary {
-            background: #3498db;
+            background: var(--green);
             color: white;
         }
 
         .btn-primary:hover {
-            background: #2980b9;
+            opacity: 0.9;
         }
 
         .btn-secondary {
@@ -168,11 +193,12 @@
             text-align: center;
             margin-top: 40px;
             padding: 20px;
-            color: #7f8c8d;
+            color: var(--text-color);
+            opacity: 0.7;
         }
 
         .footer a {
-            color: #3498db;
+            color: var(--green);
             text-decoration: none;
         }
 
@@ -285,6 +311,19 @@
         </div>
     </div>
 
+    <script>
+        // Load theme from localStorage (default dark)
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+        } else {
+            // Ensure dark mode is set
+            document.body.removeAttribute('data-theme');
+            if (!savedTheme) {
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+    </script>
     <script src="options.js"></script>
 </body>
 </html>

@@ -9,12 +9,30 @@
     <style>
         :root {
             --cyber-green: #00ff41;
-            --cyber-red: #ff0040;
-            --cyber-blue: #0080ff;
+            --cyber-red: #ff3366;
+            --cyber-blue: #00d4ff;
             --cyber-yellow: #ffff00;
             --dark-bg: #0a0a0a;
             --darker-bg: #050505;
             --card-bg: #1a1a1a;
+            --text-color: #ffffff;
+            --text-secondary: #e0e0e0;
+            --border-color: #444444;
+            --shadow-color: rgba(0, 255, 65, 0.3);
+        }
+
+        [data-theme="light"] {
+            --cyber-green: #28a745;
+            --cyber-red: #dc3545;
+            --cyber-blue: #007bff;
+            --cyber-yellow: #ffc107;
+            --dark-bg: #ffffff;
+            --darker-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow-color: rgba(0, 0, 0, 0.05);
         }
 
         * {
@@ -25,9 +43,10 @@
 
         body {
             background: var(--dark-bg);
-            color: #fff;
-            font-family: 'Consolas', 'Monaco', monospace;
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow-x: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         /* Animated Background */
@@ -39,8 +58,8 @@
             width: 100%;
             height: 100%;
             background:
-                linear-gradient(45deg, transparent 30%, rgba(0, 255, 65, 0.03) 50%, transparent 70%),
-                linear-gradient(-45deg, transparent 30%, rgba(0, 128, 255, 0.02) 50%, transparent 70%);
+                linear-gradient(45deg, transparent 30%, rgba(40, 167, 69, 0.02) 50%, transparent 70%),
+                linear-gradient(-45deg, transparent 30%, rgba(0, 123, 255, 0.01) 50%, transparent 70%);
             animation: matrix 20s infinite;
             pointer-events: none;
             z-index: -1;
@@ -59,6 +78,7 @@
             border-bottom: 2px solid var(--cyber-green);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
 
         .cyber-header::before {
@@ -68,7 +88,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 65, 0.1), transparent);
+            background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.1), transparent);
             animation: scan 3s infinite;
         }
 
@@ -76,14 +96,14 @@
             font-size: 3rem;
             font-weight: bold;
             color: var(--cyber-green);
-            text-shadow: 0 0 20px var(--cyber-green);
+            text-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
             margin-bottom: 10px;
             position: relative;
             z-index: 2;
         }
 
         .cyber-subtitle {
-            color: #ccc;
+            color: var(--text-secondary);
             font-size: 1.2rem;
             font-weight: normal;
         }
@@ -114,7 +134,7 @@
             padding: 15px 20px;
             background: transparent;
             border: none;
-            color: #ccc;
+            color: var(--text-secondary);
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
@@ -138,7 +158,7 @@
         .nav-button.active,
         .nav-button:hover {
             color: var(--cyber-green);
-            background: rgba(0, 255, 65, 0.1);
+            background: rgba(40, 167, 69, 0.1);
         }
 
         .nav-button.active::before,
@@ -164,13 +184,14 @@
         /* Cards */
         .cyber-card {
             background: var(--card-bg);
-            border: 1px solid #333;
+            border: 1px solid var(--border-color);
             border-radius: 15px;
             padding: 25px;
             margin: 20px 0;
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
+            box-shadow: 0 2px 10px var(--shadow-color);
         }
 
         .cyber-card::before {
@@ -191,7 +212,7 @@
 
         .cyber-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 255, 65, 0.2);
+            box-shadow: 0 10px 30px var(--shadow-color);
         }
 
         /* Status Indicators */
@@ -238,11 +259,11 @@
 
         /* Form Controls */
         .cyber-input {
-            background: var(--darker-bg);
-            border: 2px solid #333;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
             border-radius: 10px;
             padding: 12px 20px;
-            color: #fff;
+            color: var(--text-color);
             font-size: 1rem;
             width: 100%;
             transition: all 0.3s ease;
@@ -250,16 +271,16 @@
 
         .cyber-input:focus {
             border-color: var(--cyber-green);
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
             outline: none;
         }
 
         .cyber-button {
-            background: linear-gradient(135deg, var(--cyber-green), #00cc33);
+            background: linear-gradient(135deg, var(--cyber-green), #218838);
             border: none;
             border-radius: 25px;
             padding: 12px 30px;
-            color: var(--dark-bg);
+            color: #ffffff;
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
@@ -275,7 +296,7 @@
             left: 50%;
             width: 0;
             height: 0;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             transform: translate(-50%, -50%);
             transition: all 0.5s ease;
@@ -288,11 +309,11 @@
 
         .cyber-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 255, 65, 0.4);
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
         }
 
         .cyber-button.danger {
-            background: linear-gradient(135deg, var(--cyber-red), #cc0033);
+            background: linear-gradient(135deg, var(--cyber-red), #c82333);
             color: white;
         }
 
@@ -307,7 +328,7 @@
 
         .progress-bar-cyber {
             height: 100%;
-            background: linear-gradient(90deg, var(--cyber-green), #00ff80);
+            background: linear-gradient(90deg, var(--cyber-green), #34ce57);
             transition: width 1s ease;
             position: relative;
             overflow: hidden;
@@ -320,7 +341,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
             animation: shimmer 2s infinite;
         }
 
@@ -342,14 +363,14 @@
             align-items: center;
             padding: 12px;
             margin: 8px 0;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--darker-bg);
             border-radius: 8px;
             border-left: 3px solid var(--cyber-green);
             transition: all 0.3s ease;
         }
 
         .visit-item:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--card-bg);
             transform: translateX(5px);
         }
 
@@ -400,6 +421,7 @@
             border-radius: 10px;
             border-left: 4px solid var(--cyber-green);
             text-align: center;
+            box-shadow: 0 2px 8px var(--shadow-color);
         }
 
         .stat-number {
@@ -410,21 +432,21 @@
         }
 
         .stat-label {
-            color: #ccc;
+            color: var(--text-secondary);
             font-size: 0.9rem;
         }
 
         /* Breach Results */
         .breach-result {
             background: var(--darker-bg);
-            border: 1px solid #333;
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 20px;
             margin: 15px 0;
         }
 
         .breach-item {
-            background: rgba(255, 0, 64, 0.1);
+            background: rgba(255, 51, 102, 0.15);
             border: 1px solid var(--cyber-red);
             border-radius: 8px;
             padding: 15px;
@@ -433,13 +455,13 @@
 
         .breach-name {
             font-weight: bold;
-            color: var(--cyber-red);
+            color: #ff3366;
             font-size: 1.1rem;
             margin-bottom: 8px;
         }
 
         .breach-date {
-            color: #ccc;
+            color: #e0e0e0;
             font-size: 0.9rem;
         }
 
@@ -485,7 +507,7 @@
         }
 
         .spinner {
-            border: 3px solid #333;
+            border: 3px solid var(--border-color);
             border-top: 3px solid var(--cyber-green);
             border-radius: 50%;
             width: 40px;
@@ -536,27 +558,41 @@
         }
 
         .alert-success {
-            background: rgba(0, 255, 65, 0.1);
+            background: rgba(0, 255, 65, 0.15);
             border: 1px solid var(--cyber-green);
-            color: var(--cyber-green);
+            color: #00ff41;
         }
 
         .alert-danger {
-            background: rgba(255, 0, 64, 0.1);
+            background: rgba(255, 51, 102, 0.15);
             border: 1px solid var(--cyber-red);
-            color: var(--cyber-red);
+            color: #ff3366;
         }
 
         .alert-warning {
-            background: rgba(255, 255, 0, 0.1);
+            background: rgba(255, 255, 0, 0.15);
             border: 1px solid var(--cyber-yellow);
-            color: var(--cyber-yellow);
+            color: #ffff00;
+        }
+
+        /* Theme Toggle Button */
+        #theme-toggle {
+            transition: all 0.3s ease;
+        }
+
+        #theme-toggle:hover {
+            background: var(--cyber-green) !important;
+            color: white !important;
+            transform: rotate(180deg);
         }
     </style>
 </head>
 <body>
     <!-- Header -->
     <div class="cyber-header">
+        <button id="theme-toggle" onclick="toggleTheme()" style="position: absolute; top: 20px; right: 20px; background: none; border: 2px solid var(--cyber-green); color: var(--cyber-green); padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 16px; transition: all 0.3s; z-index: 10;">
+            <i class="fas fa-sun"></i>
+        </button>
         <h1 class="cyber-title">🛡️ CYBERGUARD</h1>
         <p class="cyber-subtitle">Advanced Cybersecurity & Web Protection Suite</p>
     </div>
@@ -601,12 +637,12 @@
                             <label class="form-label">Enter Password for Analysis:</label>
                                 <div style="position:relative;">
                                     <input type="password" id="passwordInput" class="cyber-input" placeholder="Enter your password..." style="padding-right:40px;">
-                                    <button type="button" id="togglePassword" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#00ff41; font-size:1.2rem; cursor:pointer;" tabindex="-1">
+                                    <button type="button" id="togglePassword" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); background:none; border:none; color:#28a745; font-size:1.2rem; cursor:pointer;" tabindex="-1">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                 </div>
                         </div>
-                        <button class="cyber-button" onclick="enhancePassword()" style="background: linear-gradient(135deg, var(--cyber-blue), #0066cc);">
+                        <button class="cyber-button" onclick="enhancePassword()" style="background: linear-gradient(135deg, var(--cyber-blue), #0056b3);">
                             <i class="fas fa-magic"></i> Enhance Password
                         </button>
                     </div>
@@ -639,11 +675,11 @@
                             </span>
                         </div>
                         
-                        <button class="cyber-button" id="honeypot-toggle" onclick="toggleHoneypot()" style="background: linear-gradient(135deg, #ff6600, #ff8800);">
+                        <button class="cyber-button" id="honeypot-toggle" onclick="toggleHoneypot()" style="background: linear-gradient(135deg, #28a745, #218838);">
                             <i class="fas fa-play"></i> START HONEYPOTS
                         </button>
                         
-                        <div class="mt-3" style="font-size: 14px; color: #888;">
+                        <div class="mt-3" style="font-size: 14px; color: #6c757d;">
                             <p><strong>Active Services:</strong> SSH (Port 2222) | Telnet (Port 2323) | HTTP (Port 8080)</p>
                             <p><i class="fas fa-info-circle"></i> Honeypots simulate vulnerable services to attract and log attackers</p>
                         </div>
@@ -679,10 +715,10 @@
 
                 <div class="row">
                     <div class="col-md-6">
-                        <div class="cyber-card" style="background: rgba(0, 0, 0, 0.3); max-height: 500px; overflow-y: auto;">
+                        <div class="cyber-card" style="max-height: 500px; overflow-y: auto;">
                             <h4><i class="fas fa-satellite"></i> Live Attack Feed</h4>
                             <div id="attack-feed">
-                                <div style="color: #888; text-align: center; padding: 40px;">
+                                <div style="color: var(--text-secondary); text-align: center; padding: 40px;">
                                     <i class="fas fa-shield-alt" style="font-size: 48px; opacity: 0.3;"></i>
                                     <p>No attacks detected yet. Start honeypots to begin monitoring.</p>
                                 </div>
@@ -691,10 +727,10 @@
                     </div>
                     
                     <div class="col-md-6">
-                        <div class="cyber-card" style="background: rgba(0, 0, 0, 0.3); max-height: 500px; overflow-y: auto;">
+                        <div class="cyber-card" style="max-height: 500px; overflow-y: auto;">
                             <h4><i class="fas fa-chart-bar"></i> Attack Statistics</h4>
                             <div id="attack-stats">
-                                <div style="color: #888; text-align: center; padding: 40px;">
+                                <div style="color: var(--text-secondary); text-align: center; padding: 40px;">
                                     <i class="fas fa-chart-pie" style="font-size: 48px; opacity: 0.3;"></i>
                                     <p>Statistics will appear once attacks are logged</p>
                                 </div>
@@ -840,6 +876,43 @@
         let extensionActive = true; // Extension is always ready when backend is running
         let activityCount = 0;
 
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            const currentTheme = body.getAttribute('data-theme');
+            
+            if (currentTheme === 'light') {
+                body.removeAttribute('data-theme');
+                themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.setAttribute('data-theme', 'light');
+                themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Load saved theme on page load
+        window.addEventListener('DOMContentLoaded', (event) => {
+            const savedTheme = localStorage.getItem('theme');
+            const themeToggleBtn = document.getElementById('theme-toggle');
+            
+            // If no theme is saved or theme is 'dark', use dark mode (default)
+            if (savedTheme === 'light') {
+                document.body.setAttribute('data-theme', 'light');
+                themeToggleBtn.innerHTML = '<i class="fas fa-moon"></i>';
+            } else {
+                // Ensure dark mode is set (remove any light theme attribute)
+                document.body.removeAttribute('data-theme');
+                themeToggleBtn.innerHTML = '<i class="fas fa-sun"></i>';
+                // Set theme to dark if not set
+                if (!savedTheme) {
+                    localStorage.setItem('theme', 'dark');
+                }
+            }
+        });
+
         // Tab switching
         function showTab(tabName) {
             // Hide all tabs
@@ -893,11 +966,11 @@
 
             // Set color based on strength
             if (result.strength === 'Strong') {
-                strengthBar.style.background = 'linear-gradient(90deg, var(--cyber-green), #00ff80)';
+                strengthBar.style.background = 'linear-gradient(90deg, var(--cyber-green), #34ce57)';
             } else if (result.strength === 'Medium') {
-                strengthBar.style.background = 'linear-gradient(90deg, var(--cyber-yellow), #ffff80)';
+                strengthBar.style.background = 'linear-gradient(90deg, var(--cyber-yellow), #ffd54f)';
             } else {
-                strengthBar.style.background = 'linear-gradient(90deg, var(--cyber-red), #ff4080)';
+                strengthBar.style.background = 'linear-gradient(90deg, var(--cyber-red), #e57373)';
             }
 
             // Create details HTML
@@ -1123,12 +1196,12 @@
                 statusEl.innerHTML = '<i class="fas fa-circle"></i> ACTIVE';
                 statusEl.className = 'status-indicator status-success';
                 btnEl.innerHTML = '<i class="fas fa-stop"></i> STOP HONEYPOTS';
-                btnEl.style.background = 'linear-gradient(135deg, #ff4757, #ff6b7a)';
+                btnEl.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
             } else {
                 statusEl.innerHTML = '<i class="fas fa-circle"></i> INACTIVE';
                 statusEl.className = 'status-indicator status-danger';
                 btnEl.innerHTML = '<i class="fas fa-play"></i> START HONEYPOTS';
-                btnEl.style.background = 'linear-gradient(135deg, #ff6600, #ff8800)';
+                btnEl.style.background = 'linear-gradient(135deg, #28a745, #218838)';
             }
         }
 
@@ -1176,7 +1249,7 @@
             const statsContainer = document.getElementById('attack-stats');
             if (stats.total_attacks === 0) {
                 statsContainer.innerHTML = `
-                    <div style="color: #888; text-align: center; padding: 40px;">
+                    <div style="color: var(--text-secondary); text-align: center; padding: 40px;">
                         <i class="fas fa-chart-pie" style="font-size: 48px; opacity: 0.3;"></i>
                         <p>No attacks logged yet</p>
                     </div>
@@ -1188,17 +1261,17 @@
             
             // Service breakdown
             if (stats.service_stats && Object.keys(stats.service_stats).length > 0) {
-                html += '<h5 style="color: #00ff41; margin-bottom: 15px;"><i class="fas fa-server"></i> Attacks by Service</h5>';
+                html += '<h5 style="color: var(--cyber-green); margin-bottom: 15px;"><i class="fas fa-server"></i> Attacks by Service</h5>';
                 for (const [service, count] of Object.entries(stats.service_stats)) {
                     const percentage = ((count / stats.total_attacks) * 100).toFixed(1);
                     html += `
                         <div style="margin-bottom: 15px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #ffffff;">
                                 <span><i class="fas fa-shield-alt"></i> ${service}</span>
-                                <span style="color: #ff6600;">${count} (${percentage}%)</span>
+                                <span style="color: #ffa500;">${count} (${percentage}%)</span>
                             </div>
                             <div style="background: rgba(255, 255, 255, 0.1); height: 8px; border-radius: 4px; overflow: hidden;">
-                                <div style="background: linear-gradient(90deg, #ff6600, #ff8800); height: 100%; width: ${percentage}%; transition: width 0.5s;"></div>
+                                <div style="background: linear-gradient(90deg, #ffa500, #ffb84d); height: 100%; width: ${percentage}%; transition: width 0.5s;"></div>
                             </div>
                         </div>
                     `;
@@ -1207,13 +1280,13 @@
             
             // Country breakdown
             if (stats.country_stats && Object.keys(stats.country_stats).length > 0) {
-                html += '<h5 style="color: #00ff41; margin: 20px 0 15px;"><i class="fas fa-globe"></i> Top Attack Origins</h5>';
+                html += '<h5 style="color: var(--cyber-green); margin: 20px 0 15px;"><i class="fas fa-globe"></i> Top Attack Origins</h5>';
                 const sortedCountries = Object.entries(stats.country_stats).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 for (const [country, count] of sortedCountries) {
                     html += `
-                        <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(255, 255, 255, 0.05); margin-bottom: 5px; border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px; background: rgba(255, 255, 255, 0.05); margin-bottom: 5px; border-radius: 4px; color: var(--text-color);">
                             <span>${country}</span>
-                            <span style="color: #ff0066;">${count} attacks</span>
+                            <span style="color: var(--cyber-red);">${count} attacks</span>
                         </div>
                     `;
                 }
@@ -1240,7 +1313,7 @@
             
             if (!attacks || attacks.length === 0) {
                 feedContainer.innerHTML = `
-                    <div style="color: #888; text-align: center; padding: 40px;">
+                    <div style="color: var(--text-secondary); text-align: center; padding: 40px;">
                         <i class="fas fa-shield-alt" style="font-size: 48px; opacity: 0.3;"></i>
                         <p>No attacks detected yet</p>
                     </div>
@@ -1256,28 +1329,28 @@
                 const date = new Date(attack.timestamp).toLocaleDateString();
                 
                 let icon = 'fa-bug';
-                let color = '#ff6600';
-                if (attack.service === 'SSH') { icon = 'fa-terminal'; color = '#00bfff'; }
-                else if (attack.service === 'HTTP') { icon = 'fa-globe'; color = '#ff0066'; }
-                else if (attack.service === 'TELNET') { icon = 'fa-server'; color = '#ffa502'; }
+                let color = '#fd7e14';
+                if (attack.service === 'SSH') { icon = 'fa-terminal'; color = '#007bff'; }
+                else if (attack.service === 'HTTP') { icon = 'fa-globe'; color = '#dc3545'; }
+                else if (attack.service === 'TELNET') { icon = 'fa-server'; color = '#ffc107'; }
                 
                 html += `
                     <div class="breach-result" style="border-left: 4px solid ${color}; margin-bottom: 10px; animation: slideIn 0.3s;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
                             <strong style="color: ${color};"><i class="fas ${icon}"></i> ${attack.service} - ${attack.attack_type}</strong>
-                            <small style="color: #888;">${time}</small>
+                            <small style="color: #aaaaaa;">${time}</small>
                         </div>
-                        <p style="margin: 5px 0; font-size: 13px;">
+                        <p style="margin: 5px 0; font-size: 13px; color: #ffffff;">
                             <i class="fas fa-map-marker-alt"></i> <strong>${attack.source_ip}</strong>:${attack.source_port}
-                            ${attack.country ? `<span style="color: #888;"> (${attack.country})</span>` : ''}
+                            ${attack.country ? `<span style="color: #aaaaaa;"> (${attack.country})</span>` : ''}
                         </p>
                         ${attack.credentials ? `
-                            <p style="margin: 5px 0; font-size: 12px; color: #ffa502; background: rgba(255, 165, 0, 0.1); padding: 5px; border-radius: 3px;">
+                            <p style="margin: 5px 0; font-size: 12px; color: #ffff00; background: rgba(255, 255, 0, 0.15); padding: 5px; border-radius: 3px;">
                                 <i class="fas fa-key"></i> <strong>Credentials:</strong> ${attack.credentials.substring(0, 50)}${attack.credentials.length > 50 ? '...' : ''}
                             </p>
                         ` : ''}
                         ${attack.payload && attack.payload.length > 1 ? `
-                            <p style="margin: 5px 0; font-size: 11px; color: #666;">
+                            <p style="margin: 5px 0; font-size: 11px; color: #aaaaaa;">
                                 <i class="fas fa-code"></i> ${attack.payload.substring(0, 60)}${attack.payload.length > 60 ? '...' : ''}
                             </p>
                         ` : ''}

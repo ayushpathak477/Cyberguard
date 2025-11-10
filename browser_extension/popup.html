@@ -3,21 +3,46 @@
 <head>
     <meta charset="utf-8">
     <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --text-secondary: #e0e0e0;
+            --card-bg: rgba(255, 255, 255, 0.12);
+            --border-color: #444444;
+            --green: #00ff41;
+            --red: #ff3366;
+            --yellow: #ffff00;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #ffffff;
+            --text-color: #212529;
+            --text-secondary: #6c757d;
+            --card-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --green: #28a745;
+            --red: #dc3545;
+            --yellow: #ffc107;
+        }
+
         body {
             width: 350px;
             min-height: 400px;
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-            color: white;
+            background: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .header {
-            background: linear-gradient(90deg, #4CAF50, #45a049);
+            background: linear-gradient(90deg, var(--green), #218838);
             padding: 20px;
             text-align: center;
             color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
         }
 
         .header h1 {
@@ -37,21 +62,23 @@
         }
 
         .status-card {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--card-bg);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
-            border-left: 4px solid #4CAF50;
+            border-left: 4px solid var(--green);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
         }
 
         .status-card.threat {
-            border-left-color: #ff3333;
-            background: rgba(255, 51, 51, 0.1);
+            border-left-color: var(--red);
+            background: rgba(220, 53, 69, 0.1);
         }
 
         .status-card.warning {
-            border-left-color: #ff9800;
-            background: rgba(255, 152, 0, 0.1);
+            border-left-color: var(--yellow);
+            background: rgba(255, 193, 7, 0.1);
         }
 
         .status-icon {
@@ -67,17 +94,19 @@
 
         .status-description {
             font-size: 12px;
-            opacity: 0.8;
+            color: var(--text-secondary);
             line-height: 1.4;
         }
 
         .url-info {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--card-bg);
             border-radius: 5px;
             padding: 10px;
             margin: 10px 0;
             font-size: 11px;
             word-break: break-all;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
         }
 
         .threat-details {
@@ -91,11 +120,11 @@
 
         .detail-label {
             font-weight: bold;
-            color: #ccc;
+            color: var(--text-secondary);
         }
 
         .detail-value {
-            color: white;
+            color: var(--text-color);
         }
 
         .risk-score {
@@ -104,11 +133,12 @@
             border-radius: 12px;
             font-size: 10px;
             font-weight: bold;
+            color: white;
         }
 
-        .risk-low { background: #4CAF50; }
-        .risk-medium { background: #ff9800; }
-        .risk-high { background: #ff3333; }
+        .risk-low { background: var(--green); }
+        .risk-medium { background: var(--yellow); }
+        .risk-high { background: var(--red); }
 
         .actions {
             margin-top: 20px;
@@ -126,21 +156,23 @@
         }
 
         .btn-primary {
-            background: #4CAF50;
+            background: var(--green);
             color: white;
+            transition: all 0.3s ease;
         }
 
         .btn-primary:hover {
-            background: #45a049;
+            opacity: 0.9;
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--text-secondary);
             color: white;
+            transition: all 0.3s ease;
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.2);
+            opacity: 0.9;
         }
 
         .loading {
@@ -149,8 +181,8 @@
         }
 
         .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid #4CAF50;
+            border: 3px solid var(--border-color);
+            border-top: 3px solid var(--green);
             border-radius: 50%;
             width: 30px;
             height: 30px;
@@ -166,12 +198,13 @@
         .footer {
             padding: 15px 20px;
             text-align: center;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--border-color);
             margin-top: 20px;
+            transition: all 0.3s ease;
         }
 
         .footer a {
-            color: #4CAF50;
+            color: var(--green);
             text-decoration: none;
             font-size: 12px;
         }
@@ -234,6 +267,19 @@
         <a href="#" id="help-link">Help</a>
     </div>
 
+    <script>
+        // Load theme from localStorage (default dark)
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'light') {
+            document.body.setAttribute('data-theme', 'light');
+        } else {
+            // Ensure dark mode is set
+            document.body.removeAttribute('data-theme');
+            if (!savedTheme) {
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+    </script>
     <script src="popup.js"></script>
 </body>
 </html>
